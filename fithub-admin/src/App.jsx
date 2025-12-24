@@ -5,11 +5,22 @@ import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import StudentDetail from "./pages/StudentDetail";
 
-function App() {
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<AdminLayout />}>
+        <Route path="/login" element={<Login />} />
+
+        <Route
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/" element={<Dashboard />} />
           <Route path="/students" element={<Students />} />
           <Route path="/students/:id" element={<StudentDetail />} />
@@ -18,5 +29,3 @@ function App() {
     </BrowserRouter>
   );
 }
-
-export default App;

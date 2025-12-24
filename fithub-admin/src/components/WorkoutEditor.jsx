@@ -17,15 +17,12 @@ const emptyExercise = () => ({
   notes: "",
 });
 
-const initialWeek = {
-  mon: [ { name: "Leg Press", sets: 4, reps: "10", notes: "" } ],
-  wed: [ { name: "Bench Press", sets: 4, reps: "6", notes: "" } ],
-  fri: [ { name: "Squat", sets: 4, reps: "5", notes: "" } ],
-  tue: [],
-  thu: [],
-  sat: [],
-  sun: [],
-};
+function safeClone(obj) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(obj);
+  }
+  return JSON.parse(JSON.stringify(obj));
+}
 
 function TabBtn({ active, children, onClick }) {
   return (
@@ -54,7 +51,7 @@ function Input({ value, onChange, placeholder }) {
 
 export default function WorkoutEditor({ initialWeek, onCancel, onSave }) {
   const [day, setDay] = useState("mon");
-  const [week, setWeek] = useState(() => structuredClone(initialWeek));
+  const [week, setWeek] = useState(() => safeClone(initialWeek));
 
   const items = useMemo(() => week[day] ?? [], [week, day]);
 
@@ -75,7 +72,9 @@ export default function WorkoutEditor({ initialWeek, onCancel, onSave }) {
   function updateExercise(idx, patch) {
     setWeek((prev) => ({
       ...prev,
-      [day]: (prev[day] ?? []).map((ex, i) => (i === idx ? { ...ex, ...patch } : ex)),
+      [day]: (prev[day] ?? []).map((ex, i) =>
+        i === idx ? { ...ex, ...patch } : ex
+      ),
     }));
   }
 
@@ -84,7 +83,11 @@ export default function WorkoutEditor({ initialWeek, onCancel, onSave }) {
       {/* day tabs */}
       <div className="flex flex-wrap gap-2 rounded-2xl border bg-white p-2">
         {DAYS.map((d) => (
-          <TabBtn key={d.key} active={day === d.key} onClick={() => setDay(d.key)}>
+          <TabBtn
+            key={d.key}
+            active={day === d.key}
+            onClick={() => setDay(d.key)}
+          >
             {d.label}
           </TabBtn>
         ))}
@@ -105,22 +108,24 @@ export default function WorkoutEditor({ initialWeek, onCancel, onSave }) {
         </div>
 
         <div className="mt-4 space-y-3">
-          {items.length === 0 ? (
+          {items.length === 0 && (
             <div className="rounded-xl border bg-gray-50 p-4 text-sm text-gray-600">
               No exercises yet. Click <b>+ Add exercise</b>.
             </div>
-          ) : null}
+          )}
 
           {items.map((ex, idx) => (
             <div key={idx} className="rounded-2xl border p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="w-full space-y-3">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="md:col-span-1">
+                    <div>
                       <div className="mb-1 text-xs text-gray-500">Exercise</div>
                       <Input
                         value={ex.name}
-                        onChange={(e) => updateExercise(idx, { name: e.target.value })}
+                        onChange={(e) =>
+                          updateExercise(idx, { name: e.target.value })
+                        }
                         placeholder="e.g., Leg Press"
                       />
                     </div>
@@ -129,9 +134,12 @@ export default function WorkoutEditor({ initialWeek, onCancel, onSave }) {
                       <div className="mb-1 text-xs text-gray-500">Sets</div>
                       <Input
                         value={String(ex.sets)}
-                        onChange={(e) =>
-                          updateExercise(idx, { sets: Number(e.target.value || 0) })
-                        }
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          updateExercise(idx, {
+                            sets: Number.isFinite(v) && v > 0 ? v : 0,
+                          });
+                        }}
                         placeholder="4"
                       />
                     </div>
@@ -140,17 +148,23 @@ export default function WorkoutEditor({ initialWeek, onCancel, onSave }) {
                       <div className="mb-1 text-xs text-gray-500">Reps</div>
                       <Input
                         value={ex.reps}
-                        onChange={(e) => updateExercise(idx, { reps: e.target.value })}
+                        onChange={(e) =>
+                          updateExercise(idx, { reps: e.target.value })
+                        }
                         placeholder="10"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <div className="mb-1 text-xs text-gray-500">Notes (optional)</div>
+                    <div className="mb-1 text-xs text-gray-500">
+                      Notes (optional)
+                    </div>
                     <Input
                       value={ex.notes}
-                      onChange={(e) => updateExercise(idx, { notes: e.target.value })}
+                      onChange={(e) =>
+                        updateExercise(idx, { notes: e.target.value })
+                      }
                       placeholder="tempo, rest time, RPE..."
                     />
                   </div>

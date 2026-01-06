@@ -9,27 +9,47 @@ export default function Sidebar() {
       <div className="px-2 text-xl font-semibold mb-8">FitHub Admin</div>
 
       <nav className="flex flex-col gap-1">
+        {/* Dashboard */}
         <NavLink
           to="/"
           end
           className={({ isActive }) =>
             `${base} ${
-              isActive ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"
+              isActive
+                ? "bg-black text-white"
+                : "text-gray-700 hover:bg-gray-100"
             }`
           }
         >
           Dashboard
         </NavLink>
 
+        {/* Students */}
         <NavLink
           to="/students"
           className={({ isActive }) =>
             `${base} ${
-              isActive ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"
+              isActive
+                ? "bg-black text-white"
+                : "text-gray-700 hover:bg-gray-100"
             }`
           }
         >
           Students
+        </NavLink>
+
+        {/* My Profile */}
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            `${base} ${
+              isActive
+                ? "bg-black text-white"
+                : "text-gray-700 hover:bg-gray-100"
+            }`
+          }
+        >
+          My Profile
         </NavLink>
       </nav>
     </aside>

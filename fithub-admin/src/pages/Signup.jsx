@@ -1,26 +1,60 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login } from "../lib/auth";
+import { signup } from "../lib/auth";
 
-export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function Signup() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    // Clear error when user starts typing
+    if (error) setError(null);
+  };
+
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      setError("İsim alanı boş bırakılamaz");
+      return false;
+    }
+    if (formData.password.length < 6) {
+      setError("Şifre en az 6 karakter olmalıdır");
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Şifreler eşleşmiyor");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
-    
+
     try {
-      await login(email, password);
+      await signup(formData.email, formData.password, formData.name);
       navigate("/");
     } catch (err) {
       const errorMessage = err?.response?.data?.message || 
                           err?.response?.data?.error || 
-                          "Email veya şifre hatalı";
+                          "Kayıt olurken bir hata oluştu";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -28,7 +62,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
           {/* Header */}
@@ -36,7 +70,7 @@ export default function Login() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               FitHub Admin
             </h1>
-            <p className="text-gray-600">Coach Giriş Paneli</p>
+            <p className="text-gray-600">Coach Kayıt Paneli</p>
           </div>
 
           {/* Error Message */}
@@ -49,15 +83,33 @@ export default function Login() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                İsim
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                placeholder="Adınız Soyadınız"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="ornek@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={handleChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                 disabled={loading}
@@ -70,10 +122,29 @@ export default function Login() {
               </label>
               <input
                 id="password"
+                name="password"
                 type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                placeholder="En az 6 karakter"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={6}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Şifre Tekrar
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                placeholder="Şifrenizi tekrar girin"
+                value={formData.confirmPassword}
+                onChange={handleChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                 disabled={loading}
@@ -91,23 +162,23 @@ export default function Login() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Giriş yapılıyor...
+                  Kayıt yapılıyor...
                 </span>
               ) : (
-                "Giriş Yap"
+                "Kayıt Ol"
               )}
             </button>
           </form>
 
-          {/* Signup Link */}
+          {/* Login Link */}
           <div className="text-center pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              Hesabınız yok mu?{" "}
+              Zaten hesabınız var mı?{" "}
               <Link
-                to="/signup"
+                to="/login"
                 className="text-indigo-600 hover:text-indigo-700 font-semibold transition"
               >
-                Kayıt Ol
+                Giriş Yap
               </Link>
             </p>
           </div>

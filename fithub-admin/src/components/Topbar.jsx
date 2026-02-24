@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 
 export default function Topbar() {
   const [open, setOpen] = useState(false);
   const [newPurchases, setNewPurchases] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userProfile, setUserProfile] = useState({ full_name: "", title: "", photo_url: "" });
   const nav = useNavigate();
+  const location = useLocation();
 
 
   // Daha önce gördüğümüz subscription_id'ler
@@ -48,21 +50,50 @@ export default function Topbar() {
     return () => clearInterval(t);
   }, []);
 
+  // Fetch user profile for header
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await api.get("/coach/me/profile");
+        const p = data?.profile || {};
+        setUserProfile({
+          full_name: p.full_name || "Koç",
+          title: p.title || p.job_title || "Elit Koç",
+          photo_url: p.photo_url || "",
+        });
+      } catch (e) {
+        console.error("Error fetching profile for header:", e);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  // Get page title based on route
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === "/profile") return "profilim";
+    if (path.startsWith("/students")) return "öğrenciler";
+    if (path.startsWith("/workouts")) return "antrenmanlar";
+    return "kontrol paneli";
+  };
+
   const toggle = () => {
     setOpen((v) => !v);
     setUnreadCount(0);
   };
 
   return (
-    <header className="h-14 border-b bg-white px-6 flex items-center justify-between relative">
-      <div className="font-medium">Admin Panel</div>
+    <header className="h-16 border-b border-[#E2E8F0] bg-white px-8 flex items-center justify-between relative" style={{ marginLeft: '256px' }}>
+      <div className="text-xl font-bold text-[#1D293D] capitalize" style={{ letterSpacing: '-0.449219px' }}>
+        {getPageTitle()}
+      </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-6">
         {/* 🔔 Bell */}
         <button
           onClick={toggle}
           className="relative rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
-          title="Notifications"
+          title="Bildirimler"
         >
           🔔
           {unreadCount > 0 ? (
@@ -74,35 +105,52 @@ export default function Topbar() {
 
         {/* Dropdown */}
         {open ? (
-          <div className="absolute right-6 top-14 w-96 rounded-2xl border bg-white shadow-lg overflow-hidden z-50">
+          <div className="absolute right-8 top-16 w-96 rounded-2xl border bg-white shadow-lg overflow-hidden z-50">
             <div className="px-4 py-3 text-sm font-semibold border-b">
-              New purchases (7d)
+              Yeni satın almalar (7g)
             </div>
 
             <div className="max-h-80 overflow-auto">
               {newPurchases.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-gray-500">No new purchases.</div>
+                <div className="px-4 py-6 text-sm text-gray-500">Yeni satın alma yok.</div>
               ) : (
                 newPurchases.map((x) => (
                   <div
-  key={x.subscription_id || `${x.student_id}-${x.purchased_at}`}
-  className="px-4 py-3 border-b cursor-pointer hover:bg-gray-50"
-  onClick={() => {
-    setOpen(false);
-    // New purchases sekmesi açık gelsin
-    nav(`/students?tab=new`);
-  }}
->
-  ...
-</div>
-
+                    key={x.subscription_id || `${x.student_id}-${x.purchased_at}`}
+                    className="px-4 py-3 border-b cursor-pointer hover:bg-gray-50"
+                    onClick={() => {
+                      setOpen(false);
+                      nav(`/students?tab=new`);
+                    }}
+                  >
+                    {/* Purchase item content */}
+                  </div>
                 ))
               )}
             </div>
           </div>
         ) : null}
 
-        <div className="text-sm text-gray-600">Coach / Superadmin</div>
+        {/* User Card */}
+        <div className="flex items-center gap-4 pl-6 border-l border-[#E2E8F0] cursor-pointer" onClick={() => nav("/profile")}>
+          <div className="flex flex-col items-end">
+            <div className="text-sm font-semibold text-[#0F172B] leading-5" style={{ letterSpacing: '-0.150391px' }}>
+              {userProfile.full_name || "Koç"}
+            </div>
+            <div className="text-xs text-[#62748E] leading-4">
+              {userProfile.title || "Elit Koç"}
+            </div>
+          </div>
+          <div className="w-10 h-10 rounded-full border border-[#F1F5F9] overflow-hidden bg-gray-100">
+            {userProfile.photo_url ? (
+              <img src={userProfile.photo_url} alt={userProfile.full_name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                {userProfile.full_name?.[0]?.toUpperCase() || "C"}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </header>
   );

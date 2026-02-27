@@ -4,6 +4,7 @@ import ProgramCard from "./ProgramCard";
 import Modal from "./Modal";
 import WorkoutEditor from "./WorkoutEditor";
 import NutritionEditor from "./NutritionEditor";
+import CardioEditor from "./CardioEditor";
 import { api } from "../lib/api";
 
 const DAY_LABELS = [
@@ -337,6 +338,13 @@ export default function ProgramsTab() {
     mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [],
   }));
 
+  // Cardio program state
+  const [cardioSessions, setCardioSessions] = useState([]);
+  const [cardioSource, setCardioSource] = useState(null);
+  const [activeCardioProgramId, setActiveCardioProgramId] = useState(null);
+  const [latestCardioProgram, setLatestCardioProgram] = useState(null);
+  const [showCardioEditor, setShowCardioEditor] = useState(false);
+
   const fetchActive = async () => {
     if (!studentId) return;
     setLoading(true);
@@ -354,6 +362,10 @@ export default function ProgramsTab() {
 
       const activeNutritionId = res.data?.nutrition_program?.id || null;
       setActiveNutritionProgramId(activeNutritionId);
+
+      if (res.data?.cardio_program) {
+        setActiveCardioProgramId(res.data.cardio_program.id);
+      }
     } catch (e) {
       setLoadErr(e?.response?.data?.detail || e?.message || "Aktif programlar yüklenemedi");
     } finally {
@@ -409,10 +421,28 @@ export default function ProgramsTab() {
     }
   };
 
+  const fetchLatestCardio = async () => {
+    if (!studentId) return;
+    try {
+      const res = await api.get(`/coach/students/${studentId}/cardio-programs/latest`);
+      if (res.data?.program_id) {
+        setLatestCardioProgram(res.data);
+        setCardioSessions(res.data.sessions || []);
+        setCardioSource(res.data.is_active ? 'active' : 'latest');
+        if (res.data.is_active) setActiveCardioProgramId(res.data.program_id);
+      }
+    } catch (e) {
+      if (e?.response?.status !== 404) {
+        console.error("Latest cardio fetch error:", e);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchActive();
     fetchLatestWorkout();
     fetchLatestNutrition();
+    fetchLatestCardio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
@@ -574,6 +604,40 @@ export default function ProgramsTab() {
     }
   };
 
+  const saveCardioProgram = async (sessions) => {
+    try {
+      await api.post(`/coach/students/${studentId}/cardio-programs`, { sessions });
+      setShowCardioEditor(false);
+      fetchLatestCardio();
+    } catch (e) {
+      alert("Kardiyo programı kaydedilemedi");
+    }
+  };
+
+  const assignCardioProgram = async () => {
+    try {
+      await api.post(`/coach/students/${studentId}/cardio-programs/assign`);
+      fetchLatestCardio();
+      fetchActive();
+    } catch (e) {
+      alert("Kardiyo programı atanamadı");
+    }
+  };
+
+  const removeCardioProgram = async () => {
+    if (!latestCardioProgram?.program_id) return;
+    if (!confirm("Kardiyo programını silmek istediğinize emin misiniz?")) return;
+    try {
+      await api.delete(`/coach/students/${studentId}/cardio-programs/${latestCardioProgram.program_id}`);
+      setCardioSessions([]);
+      setLatestCardioProgram(null);
+      setCardioSource(null);
+      fetchActive();
+    } catch (e) {
+      alert("Kardiyo programı silinemedi");
+    }
+  };
+
   if (loading) {
     return (
       <div className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -656,7 +720,7 @@ export default function ProgramsTab() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <ProgramCard
           title="Antrenman Programı"
           subtitle={
@@ -805,6 +869,38 @@ export default function ProgramsTab() {
             ) : null}
           </div>
         </ProgramCard>
+
+        <ProgramCard
+          title="Kardiyo Programı"
+          subtitle={
+            cardioSource === 'active' ? '✅ Aktif' :
+            cardioSource === 'latest' ? '📝 Taslak' : null
+          }
+          onEdit={() => setShowCardioEditor(true)}
+          onRemove={latestCardioProgram?.program_id ? removeCardioProgram : undefined}
+        >
+          {cardioSessions.length > 0 ? (
+            <div className="space-y-2">
+              {cardioSessions.map((s, i) => {
+                const dayNames = { mon:'Pzt', tue:'Sal', wed:'Çar', thu:'Per', fri:'Cum', sat:'Cmt', sun:'Paz' };
+                return (
+                  <div key={i} className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+                    <span className="text-sm font-medium text-gray-700">{dayNames[s.day_of_week] || s.day_of_week}</span>
+                    <span className="text-sm text-gray-600">{s.cardio_type}</span>
+                    <span className="text-sm font-semibold text-blue-600">{s.duration_min} dk</span>
+                  </div>
+                );
+              })}
+              {cardioSource === 'latest' && !activeCardioProgramId && (
+                <button onClick={assignCardioProgram} className="mt-3 w-full rounded-xl bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700">
+                  Programı Ata
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Henüz kardiyo programı oluşturulmamış</p>
+          )}
+        </ProgramCard>
       </div>
 
       {/* MODALS */}
@@ -871,6 +967,13 @@ export default function ProgramsTab() {
           }}
         />
       </Modal>
+
+      <CardioEditor
+        open={showCardioEditor}
+        onClose={() => setShowCardioEditor(false)}
+        sessions={cardioSessions}
+        onSave={saveCardioProgram}
+      />
     </>
   );
 }

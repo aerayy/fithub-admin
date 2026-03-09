@@ -31,10 +31,11 @@ export default function Students() {
       if (nextTab === "new") url = "/coach/students/new-purchases?days=7";
 
       const { data } = await api.get(url);
+      console.log("[Students] API response sample:", data?.students?.[0]);
       setStudents(data?.students || []);
     } catch (e) {
       console.error("Students fetch error:", e?.response?.status, e?.response?.data);
-      setError(e?.response?.data?.detail || "Students yüklenemedi");
+      setError(e?.response?.data?.detail || "Öğrenciler yüklenemedi");
     } finally {
       setLoading(false);
     }
@@ -101,7 +102,7 @@ export default function Students() {
       const d = typeof r.days_left === "number" ? r.days_left : null;
       return (
         <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-          {d === null ? "Active" : `Active · ${d}d left`}
+          {d === null ? "Aktif" : `Aktif · ${d} gün kaldı`}
         </span>
       );
     }
@@ -109,24 +110,56 @@ export default function Students() {
     if (tab === "new") {
       return (
         <span className="inline-flex items-center rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium text-gray-800">
-          New{typeof r.days_ago === "number" ? ` · ${r.days_ago}d ago` : ""}
+          Yeni{typeof r.days_ago === "number" ? ` · ${r.days_ago} gün önce` : ""}
         </span>
       );
     }
 
-    const isActive = !!r.is_active;
-    return (
-      <span
-        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-          isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-700"
-        }`}
-      >
-        {isActive ? "Active" : "Inactive"}
-      </span>
-    );
+    // Use actual status field from API
+    const status = r.status || r.subscription_status || "";
+    const statusLower = status.toLowerCase();
+    
+    // Map status to display
+    if (statusLower === "active") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+          Aktif
+        </span>
+      );
+    } else if (statusLower === "expired") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+          Süresi Dolmuş
+        </span>
+      );
+    } else if (statusLower === "pending") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-medium text-yellow-700">
+          Beklemede
+        </span>
+      );
+    } else if (statusLower === "canceled" || statusLower === "rejected") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+          Pasif
+        </span>
+      );
+    } else {
+      // Fallback: use is_active if status is not available
+      const isActive = !!r.is_active;
+      return (
+        <span
+          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+            isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          {isActive ? "Aktif" : "Pasif"}
+        </span>
+      );
+    }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Yükleniyor...</div>;
 
   return (
     <div className="space-y-6">
@@ -134,19 +167,19 @@ export default function Students() {
 
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Students</h1>
-          <p className="mt-1 text-sm text-gray-600">Öğrenci listesi (API’den geliyor).</p>
+          <h1 className="text-2xl font-semibold">Öğrenciler</h1>
+          <p className="mt-1 text-sm text-gray-600">Öğrenci listesi.</p>
         </div>
 
         <div className="flex items-center gap-2">
-          <TabBtn id="all">All</TabBtn>
-          <TabBtn id="active">Active</TabBtn>
-          <TabBtn id="new">New purchases (7d)</TabBtn>
+          <TabBtn id="all">Tümü</TabBtn>
+          <TabBtn id="active">Aktif</TabBtn>
+          <TabBtn id="new">Yeni satın almalar (7g)</TabBtn>
 
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search student..."
+            placeholder="Öğrenci ara..."
             className="ml-2 w-72 rounded-xl border bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20"
           />
         </div>
@@ -156,11 +189,11 @@ export default function Students() {
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-50 text-gray-600">
             <tr>
-              <th className="px-5 py-3 font-medium">Student</th>
-              <th className="px-5 py-3 font-medium">Goal</th>
-              <th className="px-5 py-3 font-medium">Status</th>
-              <th className="px-5 py-3 font-medium">Last update</th>
-              {tab === "new" ? <th className="px-5 py-3 font-medium">Action</th> : null}
+              <th className="px-5 py-3 font-medium">Öğrenci</th>
+              <th className="px-5 py-3 font-medium">Hedef</th>
+              <th className="px-5 py-3 font-medium">Durum</th>
+              <th className="px-5 py-3 font-medium">Son güncelleme</th>
+              {tab === "new" ? <th className="px-5 py-3 font-medium">İşlem</th> : null}
             </tr>
           </thead>
 
@@ -175,24 +208,34 @@ export default function Students() {
                   onClick={() => nav(`/students/${r.student_id}`)}
                   className="cursor-pointer border-t hover:bg-gray-50"
                 >
-                  <td className="px-5 py-4 font-medium text-gray-900">
-                    {r.full_name || r.email}
-                    <div className="text-xs font-normal text-gray-500">{r.email}</div>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={r.profile_photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.student_id || r.id}`}
+                        alt=""
+                        className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                        onError={(e) => { e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.student_id || r.id}`; }}
+                      />
+                      <div>
+                        <div className="font-medium text-gray-900">{r.full_name || r.email}</div>
+                        <div className="text-xs font-normal text-gray-500">{r.email}</div>
 
                     {tab === "new" ? (
                       <div className="mt-1 text-xs font-normal text-gray-500">
-                        Purchased: <span className="font-medium">{r.package_name || r.plan_name || "Package"}</span>
+                        Satın alınan: <span className="font-medium">{r.package_name || r.plan_name || "Paket"}</span>
                         {typeof r.price === "number" ? ` • ₺${r.price}` : ""}
                         {typeof r.duration_days === "number" ? ` • ${r.duration_days} gün` : ""}
                       </div>
                     ) : null}
 
-                    {r.plan_name ? (
+                    {/* Show package/plan name only, no status inference */}
+                    {(r.plan_name || r.package_name) && tab !== "new" ? (
                       <div className="mt-1 text-xs font-normal text-gray-500">
-                        {r.plan_name} •{" "}
-                        {r.subscription_status === "active" ? `${r.days_left} days left` : "expired"}
+                        {r.package_name || r.plan_name}
                       </div>
                     ) : null}
+                      </div>
+                    </div>
                   </td>
 
                   <td className="px-5 py-4 text-gray-700">{r.goal_type || "-"}</td>
@@ -215,7 +258,7 @@ export default function Students() {
                             decideSubscription({ studentId: r.student_id, subscriptionId: subId, decision: "approve" });
                           }}
                         >
-                          Approve
+                          Onayla
                         </button>
 
                         <button
@@ -227,7 +270,7 @@ export default function Students() {
                             decideSubscription({ studentId: r.student_id, subscriptionId: subId, decision: "reject" });
                           }}
                         >
-                          Reject
+                          Reddet
                         </button>
                       </div>
                     </td>
@@ -239,7 +282,7 @@ export default function Students() {
             {rows.length === 0 ? (
               <tr>
                 <td className="px-5 py-8 text-gray-500" colSpan={tab === "new" ? 5 : 4}>
-                  No students found.
+                  Öğrenci bulunamadı.
                 </td>
               </tr>
             ) : null}

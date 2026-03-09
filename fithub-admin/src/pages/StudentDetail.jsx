@@ -225,7 +225,7 @@ export default function StudentDetail() {
         setError(
           e?.response?.data?.detail ||
             e?.message ||
-            "Student detayları yüklenemedi"
+            "Öğrenci detayları yüklenemedi"
         );
       })
       .finally(() => setLoading(false));
@@ -274,7 +274,7 @@ export default function StudentDetail() {
       onboarding,
       ui: {
         id,
-        fullName: fullName || `Student #${id}`,
+        fullName: fullName || `Öğrenci #${id}`,
         email: email || "-",
         gender: gender || "-",
         age: age || "-",
@@ -282,6 +282,7 @@ export default function StudentDetail() {
         weight: weight ?? "-",
         goal: goal || "-",
         activity: activity || "-",
+        profilePhotoUrl: student?.profile_photo_url || null,
       },
     };
   }, [data, id]);
@@ -292,15 +293,15 @@ export default function StudentDetail() {
     try {
       await api.post(`/coach/students/${id}/workout-programs/assign`);
       // Success feedback
-      alert("Program assigned successfully!");
+      alert("Program başarıyla atandı!");
       // Switch to programs tab and refresh
       setTab("programs");
       setProgramsKey((k) => k + 1); // Force ProgramsTab refresh
     } catch (e) {
       const errorMsg =
-        e?.response?.data?.detail || e?.message || "Assign failed";
+        e?.response?.data?.detail || e?.message || "Atama başarısız";
       if (e?.response?.status === 404) {
-        alert("No saved program to assign yet. Please save a draft first.");
+        alert("Henüz atanacak kaydedilmiş bir program yok. Lütfen önce bir taslak kaydedin.");
       } else {
         alert(errorMsg);
       }
@@ -313,7 +314,7 @@ export default function StudentDetail() {
   if (loading) {
     return (
       <div className="rounded-2xl border bg-white p-6 shadow-sm">
-        <div className="text-sm text-gray-600">Loading...</div>
+        <div className="text-sm text-gray-600">Yükleniyor...</div>
       </div>
     );
   }
@@ -326,11 +327,19 @@ export default function StudentDetail() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{s.ui.fullName}</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {s.ui.email} • Öğrenci ID: {id}
-          </p>
+        <div className="flex items-center gap-4">
+          <img
+            src={s.ui.profilePhotoUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`}
+            alt=""
+            className="w-16 h-16 rounded-full object-cover"
+            onError={(e) => { e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`; }}
+          />
+          <div>
+            <h1 className="text-2xl font-semibold">{s.ui.fullName}</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              {s.ui.email} • Öğrenci ID: {id}
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-2">

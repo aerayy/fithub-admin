@@ -52,9 +52,22 @@ export default function Signup() {
       await signup(formData.email, formData.password, formData.name);
       navigate("/");
     } catch (err) {
-      const errorMessage = err?.response?.data?.message || 
-                          err?.response?.data?.error || 
-                          "Kayıt olurken bir hata oluştu";
+      console.error("Signup error:", err);
+      console.error("Error response:", err?.response);
+      
+      let errorMessage = "Kayıt olurken bir hata oluştu";
+      
+      if (err?.response) {
+        // Backend'den gelen hata
+        errorMessage = err.response.data?.message || 
+                      err.response.data?.error || 
+                      err.response.data?.detail ||
+                      `Sunucu hatası: ${err.response.status} - ${err.response.statusText}`;
+      } else if (err?.message) {
+        // Network veya başka bir hata
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
     } finally {
       setLoading(false);

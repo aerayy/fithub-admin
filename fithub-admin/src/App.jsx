@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import StudentDetail from "./pages/StudentDetail";
 import MyProfile from "./pages/MyProfile";
+import Messages from "./pages/Messages";
 
 export default function App() {
   return (
@@ -32,6 +33,9 @@ export default function App() {
           {/* Students */}
           <Route path="students" element={<Students />} />
           <Route path="students/:id" element={<StudentDetail />} />
+
+          {/* Messages */}
+          <Route path="messages" element={<Messages />} />
 
           {/* Coach profile */}
           <Route path="profile" element={<MyProfile />} />

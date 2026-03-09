@@ -1,56 +1,51 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 
-export function useNeededCounts({ days = 7, pollMs = 15000 } = {}) {
-  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
-  const [activeStudentsCount, setActiveStudentsCount] = useState(0);
-
+export function useNeededCounts({ pollMs = 15000 } = {}) {
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchCounts = useCallback(async () => {
+  const fetchDashboard = useCallback(async () => {
     setError("");
-
     try {
-      // 1) Pending approvals (new purchases)
-      const pendingReq = api.get(`/coach/students/new-purchases?days=${days}`);
-
-      // 2) Active students
-      const activeReq = api.get(`/coach/students/active`);
-
-      const [pendingRes, activeRes] = await Promise.all([pendingReq, activeReq]);
-
-      const pendingList = pendingRes?.data?.students || [];
-      const activeList = activeRes?.data?.students || [];
-
-      setPendingApprovalsCount(Array.isArray(pendingList) ? pendingList.length : 0);
-      setActiveStudentsCount(Array.isArray(activeList) ? activeList.length : 0);
+      const res = await api.get("/coach/dashboard/summary");
+      setData(res.data);
     } catch (e) {
-      console.error("useNeededCounts error:", e?.response?.status, e?.response?.data);
-      setError(e?.response?.data?.detail || "Counts fetch failed");
+      console.error("Dashboard summary error:", e?.response?.status, e?.response?.data);
+      setError(e?.response?.data?.detail || "Kontrol paneli verileri yüklenemedi");
     } finally {
       setLoading(false);
     }
-  }, [days]);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
-    fetchCounts();
-
+    fetchDashboard();
     if (!pollMs) return;
-
-    const id = setInterval(fetchCounts, pollMs);
+    const id = setInterval(fetchDashboard, pollMs);
     return () => clearInterval(id);
-  }, [fetchCounts, pollMs]);
+  }, [fetchDashboard, pollMs]);
 
-  return useMemo(
-    () => ({
-      pendingApprovalsCount,
-      activeStudentsCount,
+  return useMemo(() => {
+    const kpi = data?.kpi ?? {};
+    const needed = data?.needed ?? {};
+    return {
+      coachName: data?.coach_name ?? "",
+      pendingApprovalsCount: kpi.pending_approvals ?? 0,
+      activeStudentsCount: kpi.active_students ?? 0,
+      unreadMessagesCount: kpi.unread_messages ?? 0,
+      endingSoonCount: kpi.ending_soon_count ?? 0,
+      monthlyRevenue: kpi.monthly_revenue ?? 0,
+      endingSoonList: needed.ending_soon ?? [],
+      onboardingIncompleteList: needed.onboarding_incomplete ?? [],
+      missingWorkoutList: needed.missing_workout ?? [],
+      missingNutritionList: needed.missing_nutrition ?? [],
+      recentActivity: data?.recent_activity ?? [],
+      recentPurchases: data?.recent_purchases ?? [],
       loading,
       error,
-      refresh: fetchCounts,
-    }),
-    [pendingApprovalsCount, activeStudentsCount, loading, error, fetchCounts]
-  );
+      refresh: fetchDashboard,
+    };
+  }, [data, loading, error, fetchDashboard]);
 }

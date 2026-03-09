@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { useNeededCounts } from "../hooks/useNeededCounts";
 
 function Row({ label, count, desc, ctaLabel, onCta, muted }) {
   return (
@@ -10,7 +9,7 @@ function Row({ label, count, desc, ctaLabel, onCta, muted }) {
           <span
             className={[
               "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
-              muted ? "bg-gray-100 text-gray-600" : "bg-gray-900 text-white",
+              muted ? "bg-gray-100 text-gray-600" : count > 0 ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700",
             ].join(" ")}
           >
             {count}
@@ -35,18 +34,26 @@ function Row({ label, count, desc, ctaLabel, onCta, muted }) {
   );
 }
 
-export default function NeededPanel() {
+export default function NeededPanel({
+  pendingApprovalsCount,
+  unreadMessagesCount,
+  endingSoonList,
+  onboardingIncompleteList,
+  missingWorkoutList = [],
+  missingNutritionList = [],
+  loading,
+  error,
+  refresh,
+}) {
   const nav = useNavigate();
-  const { pendingApprovalsCount, activeStudentsCount, loading, error, refresh } =
-    useNeededCounts({ days: 7, pollMs: 15000 });
 
   return (
     <div className="rounded-2xl border bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-gray-900">Needed (Action Inbox)</div>
+          <div className="text-sm font-semibold text-gray-900">Aksiyon Kutusu</div>
           <div className="mt-1 text-xs text-gray-600">
-            Kritik aksiyonlar. Öncelik: satın alma onayı ve aktif öğrenci durumu.
+            Şu anda dikkatinizi gerektiren konular.
           </div>
         </div>
 
@@ -54,7 +61,7 @@ export default function NeededPanel() {
           onClick={refresh}
           className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-gray-900 hover:bg-gray-50"
         >
-          Refresh
+          Yenile
         </button>
       </div>
 
@@ -66,48 +73,51 @@ export default function NeededPanel() {
 
       <div className="mt-4 space-y-3">
         <Row
-          label="Pending approvals"
-          count={loading ? "…" : pendingApprovalsCount}
-          desc="Yeni satın almalar — koç onayı bekliyor"
-          ctaLabel="Go to New purchases"
+          label="Onay bekleyenler"
+          count={loading ? "..." : pendingApprovalsCount}
+          desc="Onayınızı bekleyen yeni satın almalar"
+          ctaLabel="İncele"
           onCta={() => nav("/students?tab=new")}
-          muted={false}
         />
 
         <Row
-          label="Active students"
-          count={loading ? "…" : activeStudentsCount}
-          desc="Aktif paketi olan öğrenciler"
-          ctaLabel="View active"
+          label="Okunmamış mesajlar"
+          count={loading ? "..." : unreadMessagesCount}
+          desc="Yanıt bekleyen öğrenci mesajları"
+          ctaLabel="Sohbeti aç"
+          onCta={() => nav("/messages")}
+        />
+
+        <Row
+          label="Eksik antrenman programı"
+          count={loading ? "..." : missingWorkoutList.length}
+          desc="Aktif antrenman programı olmayan öğrenciler"
+          ctaLabel="Program ata"
           onCta={() => nav("/students?tab=active")}
-          muted={false}
         />
 
         <Row
-          label="Check-ins overdue"
-          count={0}
-          desc="7+ gündür check-in yok (coming soon)"
-          ctaLabel="Coming soon"
-          onCta={() => {}}
-          muted
+          label="Eksik beslenme programı"
+          count={loading ? "..." : missingNutritionList.length}
+          desc="Aktif beslenme programı olmayan öğrenciler"
+          ctaLabel="Program ata"
+          onCta={() => nav("/students?tab=active")}
         />
 
         <Row
-          label="Onboarding incomplete"
-          count={0}
-          desc="Program yazmak için kritik veri eksik (coming soon)"
-          ctaLabel="Coming soon"
-          onCta={() => {}}
-          muted
+          label="Onboarding tamamlanmamış"
+          count={loading ? "..." : onboardingIncompleteList.length}
+          desc="Program oluşturmak için profil verisi eksik öğrenciler"
+          ctaLabel="Öğrencileri gör"
+          onCta={() => nav("/students?tab=active")}
         />
 
         <Row
-          label="Ending soon"
-          count={0}
-          desc="Aboneliği 7 gün içinde bitecekler (coming soon)"
-          ctaLabel="Coming soon"
-          onCta={() => {}}
-          muted
+          label="Süresi dolmak üzere"
+          count={loading ? "..." : endingSoonList.length}
+          desc="7 gün içinde sona erecek abonelikler"
+          ctaLabel="Öğrencileri gör"
+          onCta={() => nav("/students?tab=active")}
         />
       </div>
     </div>

@@ -4,15 +4,15 @@ import Topbar from "../components/Topbar";
 
 export default function AdminLayout() {
   return (
-    <div className="flex min-h-screen bg-[#fafafa]">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-[#F8FAFC]">
+      {/* Sidebar - fixed width 256px */}
       <Sidebar />
 
-      {/* Main content */}
-      <div className="flex flex-col flex-1">
+      {/* Main content - offset by sidebar */}
+      <div className="flex flex-col flex-1" style={{ marginLeft: '256px' }}>
         <Topbar />
 
-        <main className="flex-1 p-6">
+        <main className="flex-1" style={{ padding: '32px 187px 0 187px' }}>
           <Outlet />
         </main>
       </div>

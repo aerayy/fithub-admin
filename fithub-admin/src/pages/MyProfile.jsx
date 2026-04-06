@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, uploadImage } from "../lib/api";
+import { useToast } from "../components/Toast";
 
 function toCommaString(arr) {
   if (!arr) return "";
@@ -34,6 +35,8 @@ const SERVICE_TAGS = [
 ];
 
 export default function MyProfile() {
+  const { showToast, ToastContainer } = useToast();
+
   // -----------------------------
   // Profile state
   // -----------------------------
@@ -454,14 +457,14 @@ export default function MyProfile() {
     if (!file) return;
     event.target.value = "";
 
-    if (!file.type.startsWith("image/")) { alert("Lütfen bir görsel dosyası seçin."); return; }
-    if (file.size > 10 * 1024 * 1024) { alert("Dosya boyutu maksimum 10MB olabilir."); return; }
+    if (!file.type.startsWith("image/")) { showToast("Lütfen bir görsel dosyası seçin.", "error"); return; }
+    if (file.size > 10 * 1024 * 1024) { showToast("Dosya boyutu maksimum 10MB olabilir.", "error"); return; }
 
     try {
       const result = await uploadImage(file);
       setCertificates((prev) => [...prev, result.url]);
     } catch {
-      alert("Sertifika yüklenemedi. Lütfen tekrar deneyin.");
+      showToast("Sertifika yüklenemedi. Lütfen tekrar deneyin.", "error");
     }
   };
 
@@ -474,15 +477,15 @@ export default function MyProfile() {
     if (!file) return;
     event.target.value = "";
 
-    if (photos.length >= 20) { alert("Maksimum 20 fotoğraf ekleyebilirsiniz."); return; }
-    if (!file.type.startsWith("image/")) { alert("Lütfen bir görsel dosyası seçin."); return; }
-    if (file.size > 10 * 1024 * 1024) { alert("Dosya boyutu maksimum 10MB olabilir."); return; }
+    if (photos.length >= 20) { showToast("Maksimum 20 fotoğraf ekleyebilirsiniz.", "error"); return; }
+    if (!file.type.startsWith("image/")) { showToast("Lütfen bir görsel dosyası seçin.", "error"); return; }
+    if (file.size > 10 * 1024 * 1024) { showToast("Dosya boyutu maksimum 10MB olabilir.", "error"); return; }
 
     try {
       const result = await uploadImage(file);
       setPhotos((prev) => [...prev, result.url]);
     } catch {
-      alert("Fotoğraf yüklenemedi. Lütfen tekrar deneyin.");
+      showToast("Fotoğraf yüklenemedi. Lütfen tekrar deneyin.", "error");
     }
   };
 
@@ -497,12 +500,12 @@ export default function MyProfile() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Lütfen bir görsel dosyası seçin.");
+      showToast("Lütfen bir görsel dosyası seçin.", "error");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert("Dosya boyutu maksimum 10MB olabilir.");
+      showToast("Dosya boyutu maksimum 10MB olabilir.", "error");
       return;
     }
 
@@ -512,7 +515,7 @@ export default function MyProfile() {
       setPhotoUrl(result.url);
     } catch (e) {
       console.error("Photo upload error:", e);
-      alert("Fotoğraf yüklenemedi. Lütfen tekrar deneyin.");
+      showToast("Fotoğraf yüklenemedi. Lütfen tekrar deneyin.", "error");
     } finally {
       setUploadingPhoto(false);
       event.target.value = "";
@@ -1195,9 +1198,9 @@ export default function MyProfile() {
                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                       const file = e.target.files[0];
                       if (!file) return;
-                      if (!file.type.startsWith("image/")) { alert("Lütfen bir görsel dosyası seçin."); return; }
-                      if (file.size > 10 * 1024 * 1024) { alert("Dosya boyutu max 10MB olabilir."); return; }
-                      try { const result = await uploadImage(file); setNewPkg(p => ({...p, image_url: result.url})); } catch { alert("Görsel yüklenemedi."); }
+                      if (!file.type.startsWith("image/")) { showToast("Lütfen bir görsel dosyası seçin.", "error"); return; }
+                      if (file.size > 10 * 1024 * 1024) { showToast("Dosya boyutu max 10MB olabilir.", "error"); return; }
+                      try { const result = await uploadImage(file); setNewPkg(p => ({...p, image_url: result.url})); } catch { showToast("Görsel yüklenemedi.", "error"); }
                     }} />
                   </label>
                 )}
@@ -1450,6 +1453,7 @@ export default function MyProfile() {
           </div>
         </div>
       )}
+      <ToastContainer />
     </>
   );
 }

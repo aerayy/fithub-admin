@@ -165,7 +165,51 @@ export default function Students() {
     }
   };
 
-  if (loading) return <div>Yükleniyor...</div>;
+  if (loading)
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="h-8 w-40 rounded-lg bg-gray-200 animate-pulse" />
+          <div className="mt-2 h-4 w-52 rounded bg-gray-200 animate-pulse" />
+        </div>
+        <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr>
+                <th className="px-5 py-3 font-medium">Ogrenci</th>
+                <th className="px-5 py-3 font-medium">Hedef</th>
+                <th className="px-5 py-3 font-medium">Durum</th>
+                <th className="px-5 py-3 font-medium">Son guncelleme</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4].map((row) => (
+                <tr key={row} className="border-t">
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-32 rounded bg-gray-200 animate-pulse" />
+                        <div className="h-3 w-44 rounded bg-gray-100 animate-pulse" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="h-4 w-20 rounded bg-gray-200 animate-pulse" />
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="h-6 w-16 rounded-full bg-gray-200 animate-pulse" />
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="h-4 w-24 rounded bg-gray-200 animate-pulse" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
 
   return (
     <div className="space-y-6">

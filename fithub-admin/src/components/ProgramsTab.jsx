@@ -6,6 +6,7 @@ import WorkoutEditor from "./WorkoutEditor";
 import NutritionEditor from "./NutritionEditor";
 import CardioEditor from "./CardioEditor";
 import { api } from "../lib/api";
+import { useToast } from "./Toast";
 
 const DAY_LABELS = [
   ["mon", "Pzt"],
@@ -310,6 +311,7 @@ function nutritionSummaryCards(week, dayKey = "mon") {
 export default function ProgramsTab() {
   const { id } = useParams();
   const studentId = id;
+  const { showToast, ToastContainer } = useToast();
 
   const [open, setOpen] = useState(null); // null | "workout" | "nutrition"
   const [selectedDay, setSelectedDay] = useState("mon");
@@ -576,7 +578,7 @@ export default function ProgramsTab() {
       setWorkoutSource(null);
       await Promise.all([fetchActive(), fetchLatestWorkout()]);
     } catch (e) {
-      alert(e?.response?.data?.detail || "Program silinemedi");
+      showToast(e?.response?.data?.detail || "Program silinemedi", "error");
     }
   };
 
@@ -590,7 +592,7 @@ export default function ProgramsTab() {
       setNutritionWeek({ mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] });
       await Promise.all([fetchActive(), fetchLatestNutrition()]);
     } catch (e) {
-      alert(e?.response?.data?.detail || "Program silinemedi");
+      showToast(e?.response?.data?.detail || "Program silinemedi", "error");
     }
   };
 
@@ -600,7 +602,7 @@ export default function ProgramsTab() {
       setShowCardioEditor(false);
       fetchLatestCardio();
     } catch (e) {
-      alert("Kardiyo programı kaydedilemedi");
+      showToast("Kardiyo programı kaydedilemedi", "error");
     }
   };
 
@@ -610,7 +612,7 @@ export default function ProgramsTab() {
       fetchLatestCardio();
       fetchActive();
     } catch (e) {
-      alert("Kardiyo programı atanamadı");
+      showToast("Kardiyo programı atanamadı", "error");
     }
   };
 
@@ -624,7 +626,7 @@ export default function ProgramsTab() {
       setCardioSource(null);
       fetchActive();
     } catch (e) {
-      alert("Kardiyo programı silinemedi");
+      showToast("Kardiyo programı silinemedi", "error");
     }
   };
 
@@ -894,7 +896,7 @@ export default function ProgramsTab() {
                 e?.response?.data?.detail ||
                 e?.message ||
                 "Antrenman programı kaydedilemedi";
-              alert(msg);
+              showToast(msg, "error");
               console.error("Workout save failed:", e);
             }
           }}
@@ -921,7 +923,7 @@ export default function ProgramsTab() {
                 e?.response?.data?.detail ||
                 e?.message ||
                 "Beslenme programı kaydedilemedi";
-              alert(msg);
+              showToast(msg, "error");
               console.error("Nutrition save failed:", e);
             }
           }}
@@ -934,6 +936,7 @@ export default function ProgramsTab() {
         sessions={cardioSessions}
         onSave={saveCardioProgram}
       />
+      <ToastContainer />
     </>
   );
 }

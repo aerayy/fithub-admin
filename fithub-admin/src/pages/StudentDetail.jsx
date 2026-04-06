@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ProgramsTab from "../components/ProgramsTab";
 import { api, createCoachConversation, uploadImage } from "../lib/api";
+import { useToast } from "../components/Toast";
 
 const DAYS = [
   { key: "mon", label: "Pzt" },
@@ -204,6 +205,7 @@ function getDayLabel(key) {
 export default function StudentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showToast, ToastContainer } = useToast();
   const [tab, setTab] = useState("overview"); // overview | programs | messages
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -293,7 +295,7 @@ export default function StudentDetail() {
     try {
       await api.post(`/coach/students/${id}/workout-programs/assign`);
       // Success feedback
-      alert("Program başarıyla atandı!");
+      showToast("Program başarıyla atandı!", "success");
       // Switch to programs tab and refresh
       setTab("programs");
       setProgramsKey((k) => k + 1); // Force ProgramsTab refresh
@@ -301,9 +303,9 @@ export default function StudentDetail() {
       const errorMsg =
         e?.response?.data?.detail || e?.message || "Atama başarısız";
       if (e?.response?.status === 404) {
-        alert("Henüz atanacak kaydedilmiş bir program yok. Lütfen önce bir taslak kaydedin.");
+        showToast("Henüz atanacak kaydedilmiş bir program yok. Lütfen önce bir taslak kaydedin.", "error");
       } else {
-        alert(errorMsg);
+        showToast(errorMsg, "error");
       }
       console.error("Assign program error:", e);
     } finally {
@@ -495,6 +497,7 @@ export default function StudentDetail() {
         <StudentMessages studentId={Number(id)} studentName={parsed?.ui?.fullName || "Öğrenci"} />
       )}
 
+      <ToastContainer />
     </div>
   );
 }

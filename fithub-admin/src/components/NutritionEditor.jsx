@@ -352,11 +352,11 @@ export default function NutritionEditor({ initialWeek, initialSupplements, onCan
 
   /** FoodSearchInput için seçili besin objesi (sadece display) */
   function itemToFoodValue(item) {
-    if (!item?.food_id) return null;
+    if (!item?.food_id && !item?.name_tr) return null;
     return {
-      id: item.food_id,
-      name_tr: item.name_tr,
-      name_en: item.name_en,
+      id: item.food_id ?? null,
+      name_tr: item.name_tr ?? "",
+      name_en: item.name_en ?? "",
     };
   }
 
@@ -452,7 +452,7 @@ export default function NutritionEditor({ initialWeek, initialSupplements, onCan
                           />
                         </div>
                         <div className="flex flex-wrap items-end gap-2">
-                          {it.food_id ? (
+                          {(it.food_id || it.name_tr) ? (
                             <>
                               <div className="flex rounded-xl border border-gray-200 bg-white p-0.5 shadow-sm">
                                 <button
@@ -485,7 +485,7 @@ export default function NutritionEditor({ initialWeek, initialSupplements, onCan
                                     <input
                                       type="number"
                                       min={1}
-                                      placeholder="gram"
+                                      placeholder="gr"
                                       value={it.piece_weight_g ?? ""}
                                       onChange={(e) =>
                                         setPieceWeight(mealIdx, itemIdx, e.target.value)

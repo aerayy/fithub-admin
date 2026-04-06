@@ -157,7 +157,6 @@ export default function MyProfile() {
     setPkgLoading(true);
     try {
       const { data } = await api.get("/coach/packages");
-      console.log("Fetched packages:", data);
       
       // Backend might return packages array directly or wrapped in packages key
       let packagesList = [];
@@ -225,7 +224,6 @@ export default function MyProfile() {
       };
 
       const response = await api.put("/coach/me/profile", payload);
-      console.log("Profile save response:", response.data);
       
       // Update initial state with saved values before fetching
       setInitialState({
@@ -314,16 +312,14 @@ export default function MyProfile() {
         name: newPkg.name.trim(),
         description: newPkg.description?.trim() || null,
         duration_days: Number(newPkg.duration_months) * 30, // Convert months to days
-        price: Math.round(parseFloat(newPkg.price) * 100), // Convert to integer (kurus)
+        price: parseFloat(newPkg.price) || 0,
         discount_percentage: parseFloat(newPkg.discount_percentage) || 0,
         is_active: !!newPkg.is_active,
         services: Array.isArray(newPkg.services) ? newPkg.services : [],
         image_url: newPkg.image_url || null,
       };
 
-      console.log("Creating package with body:", body);
       const response = await api.post("/coach/packages", body);
-      console.log("Package created successfully:", response.data);
       
       // Success - reset form and close modal
       setNewPkg({ name: "", description: "", duration_months: 1, price: 0, discount_percentage: 0, is_active: true, services: [], image_url: "" });
@@ -372,12 +368,7 @@ export default function MyProfile() {
   };
 
   const openEdit = (p) => {
-    // Backend price might be in kurus, convert to TL for editing
-    let price = parseFloat(p.price) || 0;
-    if (price > 100 && price === Math.floor(price)) {
-      // Likely in kurus, convert to TL
-      price = price / 100;
-    }
+    const price = parseFloat(p.price) || 0;
     
     setEditPkg({
       id: p.id,
@@ -402,7 +393,7 @@ export default function MyProfile() {
         name: editPkg.name.trim(),
         description: editPkg.description?.trim() || null,
         duration_days: Number(editPkg.duration_months) * 30, // Convert months to days
-        price: Math.round(parseFloat(editPkg.price) * 100), // Convert to integer (kurus)
+        price: parseFloat(editPkg.price) || 0,
         discount_percentage: parseFloat(editPkg.discount_percentage) || 0,
         is_active: !!editPkg.is_active,
         services: Array.isArray(editPkg.services) ? editPkg.services : [],
@@ -458,59 +449,41 @@ export default function MyProfile() {
     }
   };
 
-  const handleCertificateUpload = (event) => {
+  const handleCertificateUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
+    event.target.value = "";
 
-    if (!file.type.startsWith("image/")) {
-      alert("Lütfen bir görsel dosyası seçin.");
-      return;
+    if (!file.type.startsWith("image/")) { alert("Lütfen bir görsel dosyası seçin."); return; }
+    if (file.size > 10 * 1024 * 1024) { alert("Dosya boyutu maksimum 10MB olabilir."); return; }
+
+    try {
+      const result = await uploadImage(file);
+      setCertificates((prev) => [...prev, result.url]);
+    } catch {
+      alert("Sertifika yüklenemedi. Lütfen tekrar deneyin.");
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Dosya boyutu maksimum 5MB olabilir.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      setCertificates([...certificates, base64String]);
-    };
-    reader.readAsDataURL(file);
-    event.target.value = ""; // Reset input
   };
 
   const removeCertificate = (index) => {
     setCertificates(certificates.filter((_, i) => i !== index));
   };
 
-  const handlePhotoUpload = (event) => {
+  const handlePhotoUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
+    event.target.value = "";
 
-    if (photos.length >= 10) {
-      alert("Maksimum 10 fotoğraf ekleyebilirsiniz.");
-      return;
+    if (photos.length >= 20) { alert("Maksimum 20 fotoğraf ekleyebilirsiniz."); return; }
+    if (!file.type.startsWith("image/")) { alert("Lütfen bir görsel dosyası seçin."); return; }
+    if (file.size > 10 * 1024 * 1024) { alert("Dosya boyutu maksimum 10MB olabilir."); return; }
+
+    try {
+      const result = await uploadImage(file);
+      setPhotos((prev) => [...prev, result.url]);
+    } catch {
+      alert("Fotoğraf yüklenemedi. Lütfen tekrar deneyin.");
     }
-
-    if (!file.type.startsWith("image/")) {
-      alert("Lütfen bir görsel dosyası seçin.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Dosya boyutu maksimum 5MB olabilir.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      setPhotos([...photos, base64String]);
-    };
-    reader.readAsDataURL(file);
-    event.target.value = ""; // Reset input
   };
 
   const removePhoto = (index) => {
@@ -778,7 +751,7 @@ export default function MyProfile() {
                     type="email"
                     value={email || ""}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="alex@fithub.com"
+                    placeholder="ornek@email.com"
                     disabled={loading || !editProfileOpen}
                     className="flex-1 text-sm font-medium text-[#0A0A0A] bg-transparent border-none outline-none disabled:cursor-default"
                   />
@@ -853,7 +826,7 @@ export default function MyProfile() {
                   type="text"
                   value={linkedin || ""}
                   onChange={(e) => setLinkedin(e.target.value)}
-                  placeholder="in/alextrainer"
+                  placeholder="in/koçadı"
                   disabled={loading || !editProfileOpen}
                   className="flex-1 text-sm font-medium text-[#0A0A0A] bg-transparent border-none outline-none disabled:cursor-default"
                 />
@@ -871,7 +844,7 @@ export default function MyProfile() {
                   type="text"
                   value={website || ""}
                   onChange={(e) => setWebsite(e.target.value)}
-                  placeholder="https://website.com"
+                  placeholder="https://siteadresiniz.com"
                   disabled={loading || !editProfileOpen}
                   className="flex-1 text-sm font-medium text-[#0A0A0A] bg-transparent border-none outline-none disabled:cursor-default"
                 />
@@ -969,59 +942,48 @@ export default function MyProfile() {
 
             {/* Photos Card */}
             <div className="bg-white rounded-[14px] shadow-sm p-6">
-              <h4 className="text-base font-medium text-[#0A0A0A] mb-1">Fotoğraflar</h4>
-              <p className="text-xs text-gray-500 mb-4">Maksimum 4 fotoğraf ekleyebilirsiniz.</p>
-              <div className="space-y-3">
-                {/* Add Photo */}
-                {photos.length < 4 && (
-                  <label className="block">
-                    <input
-                      type="file"
-                      accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                    disabled={loading || !editProfileOpen}
-                    />
-                    <div className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 cursor-pointer text-center">
-                      Fotoğraf Yükle
-                    </div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="text-base font-medium text-[#0A0A0A]">Fotoğraflar</h4>
+                  <p className="text-xs text-gray-500 mt-0.5">{photos.length}/20 fotoğraf</p>
+                </div>
+                {photos.length < 20 && (
+                  <label className="inline-flex items-center gap-1.5 px-3 py-2 bg-black text-white text-sm font-medium rounded-xl hover:bg-black/90 cursor-pointer">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Yükle
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
                   </label>
                 )}
-
-                {/* Photos Grid */}
-                {photos.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {photos.map((url, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={url}
-                          alt={`Fotoğraf ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg"
-                          onError={(e) => {
-                            e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23f3f4f6' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239ca3af' font-family='sans-serif' font-size='12'%3EImage%3C/text%3E%3C/svg%3E";
-                          }}
-                        />
-                        <button
-                          onClick={() => removePhoto(index)}
-                          className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Fotoğrafı kaldır"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path
-                              d="M9 3L3 9M3 3L9 9"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400 text-center py-4">Henüz fotoğraf eklenmemiş.</p>
-                )}
               </div>
+
+              {photos.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {photos.map((url, index) => (
+                    <div key={index} className="relative group aspect-square">
+                      <img
+                        src={url}
+                        alt={`Fotoğraf ${index + 1}`}
+                        className="w-full h-full object-cover rounded-xl"
+                        onError={(e) => {
+                          e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23f3f4f6' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239ca3af' font-family='sans-serif' font-size='12'%3EYok%3C/text%3E%3C/svg%3E";
+                        }}
+                      />
+                      <button
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                        title="Kaldır"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 rounded-xl border-2 border-dashed border-gray-200">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                  <p className="text-sm text-gray-400 mt-2">Henüz fotoğraf eklenmemiş</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1098,12 +1060,7 @@ export default function MyProfile() {
               ) : (
                 packages.map((p) => {
                   const durationMonths = p.duration_months ?? (p.duration_days ? Math.round(p.duration_days / 30) : 1);
-                  // Backend price might be in kurus (integer), convert to TL if > 100
-                  let originalPrice = parseFloat(p.price) || 0;
-                  if (originalPrice > 100 && originalPrice === Math.floor(originalPrice)) {
-                    // Likely in kurus, convert to TL
-                    originalPrice = originalPrice / 100;
-                  }
+                  const originalPrice = parseFloat(p.price) || 0;
                   const discount = parseFloat(p.discount_percentage) || 0;
                   const discountedPrice = discount > 0 ? originalPrice * (1 - discount / 100) : originalPrice;
                   const hasDiscount = discount > 0;
@@ -1209,217 +1166,106 @@ export default function MyProfile() {
       {/* Create Package Modal */}
       {createPackageOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white border p-6">
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div>
-                <h3 className="text-lg font-semibold">Paket Oluştur</h3>
-                <p className="text-sm text-gray-500">Yeni paket oluşturun.</p>
-              </div>
-              <button
-                type="button"
-                className="text-gray-400 hover:text-gray-600"
-                onClick={() => {
-                  setCreatePackageOpen(false);
-                  setPkgError("");
-                }}
-              >
-                ✕
-              </button>
+          <div className="w-full max-w-lg rounded-2xl bg-white border flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <h3 className="text-lg font-semibold">Paket Oluştur</h3>
+              <button type="button" className="text-gray-400 hover:text-gray-600" onClick={() => { setCreatePackageOpen(false); setPkgError(""); }}>✕</button>
             </div>
 
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!creating && newPkg.name.trim()) {
-                  createPackage();
-                }
-              }}
+              className="flex flex-col flex-1 min-h-0"
+              onSubmit={(e) => { e.preventDefault(); if (!creating && newPkg.name.trim()) createPackage(); }}
             >
-              {pkgError && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  {pkgError}
-                </div>
-              )}
-              <div className="space-y-4">
-                {/* Paket Görseli */}
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Paket Görseli</label>
-                  {newPkg.image_url ? (
-                    <div className="relative w-full h-40 rounded-xl overflow-hidden border">
-                      <img src={newPkg.image_url} alt="Paket görseli" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setNewPkg(p => ({...p, image_url: ""}))}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center text-sm hover:bg-black/80"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-40 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition">
-                      <div className="text-gray-400 text-sm">Gorsel yuklemek icin tiklayin</div>
-                      <div className="text-gray-300 text-xs mt-1">PNG, JPG (max 10MB)</div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files[0];
-                          if (!file) return;
-                          if (!file.type.startsWith("image/")) { alert("Lutfen bir gorsel dosyasi secin."); return; }
-                          if (file.size > 10 * 1024 * 1024) { alert("Dosya boyutu max 10MB olabilir."); return; }
-                          try {
-                            const result = await uploadImage(file);
-                            setNewPkg(p => ({...p, image_url: result.url}));
-                          } catch (err) {
-                            alert("Gorsel yuklenemedi.");
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
-                </div>
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto px-5 space-y-3">
+                {pkgError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-sm text-red-700">{pkgError}</div>
+                )}
 
+                {/* Görsel - kompakt */}
+                {newPkg.image_url ? (
+                  <div className="relative h-24 rounded-xl overflow-hidden border">
+                    <img src={newPkg.image_url} alt="" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setNewPkg(p => ({...p, image_url: ""}))} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs hover:bg-black/80">✕</button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center h-16 rounded-xl border-2 border-dashed border-gray-300 cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition">
+                    <span className="text-gray-400 text-sm">Görsel yükle (isteğe bağlı)</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      if (!file.type.startsWith("image/")) { alert("Lütfen bir görsel dosyası seçin."); return; }
+                      if (file.size > 10 * 1024 * 1024) { alert("Dosya boyutu max 10MB olabilir."); return; }
+                      try { const result = await uploadImage(file); setNewPkg(p => ({...p, image_url: result.url})); } catch { alert("Görsel yüklenemedi."); }
+                    }} />
+                  </label>
+                )}
+
+                {/* Paket adı */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Paket adı</label>
-                  <input
-                    className="w-full rounded-xl border px-3 py-2 text-sm text-gray-900 bg-white outline-none focus:ring-2 focus:ring-black/10"
-                    value={newPkg.name}
-                    onChange={(e) => setNewPkg((s) => ({ ...s, name: e.target.value }))}
-                    placeholder="Örn: 1 Aylık Online Koçluk"
-                    required
-                  />
-              </div>
+                  <input className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10" value={newPkg.name} onChange={(e) => setNewPkg(s => ({ ...s, name: e.target.value }))} placeholder="Örn: 1 Aylık Online Koçluk" required />
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Açıklama (isteğe bağlı)
-                </label>
-                <textarea
-                  className="w-full rounded-xl border px-3 py-2 text-sm text-gray-900 bg-white outline-none focus:ring-2 focus:ring-black/10 min-h-[110px]"
-                  value={newPkg.description}
-                  onChange={(e) => setNewPkg((s) => ({ ...s, description: e.target.value }))}
-                  placeholder="Pakette neler var?"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+                {/* Açıklama */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
-                    Süre (ay)
-                  </label>
-                  <input
-                    className="w-full rounded-xl border px-3 py-2 text-sm text-gray-900 bg-white outline-none focus:ring-2 focus:ring-black/10"
-                    type="number"
-                    min={1}
-                    value={newPkg.duration_months}
-                    onChange={(e) => setNewPkg((s) => ({ ...s, duration_months: e.target.value }))}
-                  />
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Açıklama (isteğe bağlı)</label>
+                  <textarea className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10 min-h-[60px]" value={newPkg.description} onChange={(e) => setNewPkg(s => ({ ...s, description: e.target.value }))} placeholder="Pakette neler var?" />
                 </div>
+
+                {/* Süre + Fiyat + İndirim — tek satır */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Süre (ay)</label>
+                    <input className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10" type="number" min={1} value={newPkg.duration_months} onChange={(e) => setNewPkg(s => ({ ...s, duration_months: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Fiyat (₺)</label>
+                    <input className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10" type="number" min={0} step="0.01" value={newPkg.price} onChange={(e) => setNewPkg(s => ({ ...s, price: e.target.value }))} placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">İndirim (%)</label>
+                    <input className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10" type="number" min={0} max={100} value={newPkg.discount_percentage} onChange={(e) => setNewPkg(s => ({ ...s, discount_percentage: e.target.value }))} placeholder="0" />
+                  </div>
+                </div>
+
+                {/* Dahil Hizmetler — 2 sütun grid */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Fiyat (₺)</label>
-                  <input
-                    className="w-full rounded-xl border px-3 py-2 text-sm text-gray-900 bg-white outline-none focus:ring-2 focus:ring-black/10"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={newPkg.price}
-                    onChange={(e) => setNewPkg((s) => ({ ...s, price: e.target.value }))}
-                    placeholder="0.00"
-                  />
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Dahil Hizmetler</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {SERVICE_TAGS.map((tag) => {
+                      const isSelected = Array.isArray(newPkg.services) && newPkg.services.includes(tag);
+                      return (
+                        <button key={tag} type="button" onClick={() => {
+                          const cur = Array.isArray(newPkg.services) ? newPkg.services : [];
+                          setNewPkg(s => ({ ...s, services: isSelected ? cur.filter(t => t !== tag) : [...cur, tag] }));
+                        }} className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition-colors ${isSelected ? "bg-black text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  İndirim (%) (isteğe bağlı)
+                {/* Aktif toggle */}
+                <label className="flex items-center justify-between gap-3 cursor-pointer py-1">
+                  <div>
+                    <div className="text-sm font-semibold">Aktif paket</div>
+                    <div className="text-xs text-gray-500">Pasif olursa satışta görünmez.</div>
+                  </div>
+                  <input type="checkbox" checked={!!newPkg.is_active} onChange={(e) => setNewPkg(s => ({ ...s, is_active: e.target.checked }))} className="h-5 w-5" />
                 </label>
-                <input
-                  className="w-full rounded-xl border px-3 py-2 text-sm text-gray-900 bg-white outline-none focus:ring-2 focus:ring-black/10"
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
-                  value={newPkg.discount_percentage}
-                  onChange={(e) => setNewPkg((s) => ({ ...s, discount_percentage: e.target.value }))}
-                  placeholder="0"
-                />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  Dahil Hizmetler
-                </label>
-                <p className="text-xs text-gray-500 mb-2">Bu pakete dahil olanları seçin.</p>
-                <div className="flex flex-wrap gap-2">
-                  {SERVICE_TAGS.map((tag) => {
-                    const isSelected = Array.isArray(newPkg.services) && newPkg.services.includes(tag);
-                    const isDisabled = !isSelected && Array.isArray(newPkg.services) && newPkg.services.length >= 12;
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => {
-                          if (isDisabled) return;
-                          const currentServices = Array.isArray(newPkg.services) ? newPkg.services : [];
-                          if (isSelected) {
-                            setNewPkg((s) => ({ ...s, services: currentServices.filter((s) => s !== tag) }));
-                          } else {
-                            setNewPkg((s) => ({ ...s, services: [...currentServices, tag] }));
-                          }
-                        }}
-                        disabled={isDisabled}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          isSelected
-                            ? "bg-black text-white"
-                            : isDisabled
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
-                {Array.isArray(newPkg.services) && newPkg.services.length >= 12 && (
-                  <p className="text-xs text-amber-600 mt-2">Maksimum 12 hizmet seçildi.</p>
-                )}
-              </div>
-
-              <label className="flex items-center justify-between gap-3 cursor-pointer">
-                <div>
-                  <div className="text-sm font-semibold">Aktif paket</div>
-                  <div className="text-xs text-gray-500">Pasif olursa satışta görünmez.</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={!!newPkg.is_active}
-                  onChange={(e) => setNewPkg((s) => ({ ...s, is_active: e.target.checked }))}
-                  className="h-5 w-5"
-                />
-              </label>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-white hover:bg-gray-50"
-                    onClick={() => {
-                      setCreatePackageOpen(false);
-                      setPkgError("");
-                    }}
-                    disabled={creating}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold bg-black text-white hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={creating || !newPkg.name.trim()}
-                  >
-                    {creating ? "Oluşturuluyor..." : "Oluştur"}
-                  </button>
-                </div>
+              {/* Footer — sabit */}
+              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t mt-2">
+                <button type="button" className="rounded-xl px-4 py-2 text-sm font-semibold border bg-white hover:bg-gray-50" onClick={() => { setCreatePackageOpen(false); setPkgError(""); }} disabled={creating}>
+                  İptal
+                </button>
+                <button type="submit" className="rounded-xl px-4 py-2 text-sm font-semibold bg-black text-white hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed" disabled={creating || !newPkg.name.trim()}>
+                  {creating ? "Oluşturuluyor..." : "Oluştur"}
+                </button>
               </div>
             </form>
           </div>

@@ -83,7 +83,7 @@ export default function Topbar() {
   };
 
   return (
-    <header className="h-16 border-b border-[#E2E8F0] bg-white px-8 flex items-center justify-between relative" style={{ marginLeft: '256px' }}>
+    <header className="h-16 border-b border-[#E2E8F0] bg-white px-6 flex items-center justify-between relative">
       <div className="text-xl font-bold text-[#1D293D] capitalize" style={{ letterSpacing: '-0.449219px' }}>
         {getPageTitle()}
       </div>
@@ -117,13 +117,26 @@ export default function Topbar() {
                 newPurchases.map((x) => (
                   <div
                     key={x.subscription_id || `${x.student_id}-${x.purchased_at}`}
-                    className="px-4 py-3 border-b cursor-pointer hover:bg-gray-50"
+                    className="flex items-center gap-3 px-4 py-3 border-b cursor-pointer hover:bg-gray-50"
                     onClick={() => {
                       setOpen(false);
                       nav(`/students?tab=new`);
                     }}
                   >
-                    {/* Purchase item content */}
+                    <img
+                      src={x.profile_photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${x.student_id}`}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-gray-900 truncate">{x.full_name || x.email || "Öğrenci"}</div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {x.package_name || x.plan_name || "Paket"}{typeof x.price === "number" ? ` · ₺${x.price}` : ""}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 flex-shrink-0">
+                      {x.purchased_at ? new Date(x.purchased_at).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }) : ""}
+                    </div>
                   </div>
                 ))
               )}

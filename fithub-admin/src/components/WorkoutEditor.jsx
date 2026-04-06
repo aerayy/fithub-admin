@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ExerciseSearchInput from "./ExerciseSearchInput";
 
 const DAYS = [
   { key: "mon", label: "Pzt" },
@@ -364,51 +365,21 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
         ))}
       </div>
 
-      {/* Day header like Flutter */}
+      {/* Day header — simplified */}
       <div className="rounded-2xl border bg-white p-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <div className="mb-1 text-xs text-gray-500">Antrenman başlığı</div>
-            <Input
-              value={dayObj.title}
-              onChange={(e) => updateDay({ title: e.target.value })}
-              placeholder="Örn: Üst Vücut Güç"
-            />
-          </div>
-          <div>
-            <div className="mb-1 text-xs text-gray-500">Saat (bu gün için)</div>
-            <Input
-              type="time"
-              value={dayObj.scheduled_time ?? ""}
-              onChange={(e) => updateDay({ scheduled_time: e.target.value })}
-              placeholder="09:00"
-            />
-          </div>
-          <div>
-            <div className="mb-1 text-xs text-gray-500">Kcal (isteğe bağlı)</div>
-            <Input
-              value={String(dayObj.kcal ?? "")}
-              onChange={(e) => updateDay({ kcal: e.target.value })}
-              placeholder="450"
-            />
-          </div>
-        </div>
-
-        <div className="mt-3">
-          <div className="mb-1 text-xs text-gray-500">Koç notu</div>
-          <Textarea
-            value={dayObj.coach_note}
-            onChange={(e) => updateDay({ coach_note: e.target.value })}
-            placeholder="Hızdan çok forma odaklan. Acele etme..."
-            rows={3}
-          />
-        </div>
+        <div className="mb-1 text-xs text-gray-500">Koç notu (isteğe bağlı)</div>
+        <Textarea
+          value={dayObj.coach_note}
+          onChange={(e) => updateDay({ coach_note: e.target.value })}
+          placeholder="Bu gün için öğrenciye notun..."
+          rows={2}
+        />
       </div>
 
       {/* Warm Up Flow */}
       <div className="rounded-2xl border bg-white p-4">
         <SectionTitle
-          icon="🔥"
+          icon=""
           title="Isınma"
           right={
             <button
@@ -447,54 +418,29 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
           )}
 
           {(dayObj.warmup?.items || []).map((ex, idx) => (
-            <div key={idx} className="rounded-2xl border p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="w-full space-y-3">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div>
-                      <div className="mb-1 text-xs text-gray-500">Egzersiz</div>
-                      <Input
-                        value={ex.name}
-                        onChange={(e) => updateWarmupExercise(idx, { name: e.target.value })}
-                        placeholder="e.g., Band Pull Apart"
-                      />
-                    </div>
-                    <div>
-                      <div className="mb-1 text-xs text-gray-500">Set</div>
-                      <Input
-                        value={String(ex.sets)}
-                        onChange={(e) => updateWarmupExercise(idx, { sets: parsePositiveInt(e.target.value) })}
-                        placeholder="2"
-                      />
-                    </div>
-                    <div>
-                      <div className="mb-1 text-xs text-gray-500">Tekrar</div>
-                      <Input
-                        value={ex.reps}
-                        onChange={(e) => updateWarmupExercise(idx, { reps: e.target.value })}
-                        placeholder="15"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-1 text-xs text-gray-500">Notlar (isteğe bağlı)</div>
-                    <Input
-                      value={ex.notes}
-                      onChange={(e) => updateWarmupExercise(idx, { notes: e.target.value })}
-                      placeholder="tempo, dinlenme süresi..."
-                    />
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => removeWarmupExercise(idx)}
-                  className="rounded-xl border px-3 py-2 text-sm font-medium hover:bg-gray-50"
-                  type="button"
-                >
-                  Kaldır
-                </button>
+            <div key={idx} className="flex items-center gap-2 rounded-xl border p-3">
+              <div className="flex-1 min-w-0">
+                <ExerciseSearchInput
+                  value={ex.name}
+                  onChange={(name, exercise) => updateWarmupExercise(idx, { name, exercise_library_id: exercise?.id || ex.exercise_library_id })}
+                  placeholder="Egzersiz ara..."
+                />
               </div>
+              <div className="w-16">
+                <Input
+                  value={String(ex.sets)}
+                  onChange={(e) => updateWarmupExercise(idx, { sets: parsePositiveInt(e.target.value) })}
+                  placeholder="Set"
+                />
+              </div>
+              <div className="w-16">
+                <Input
+                  value={ex.reps}
+                  onChange={(e) => updateWarmupExercise(idx, { reps: e.target.value })}
+                  placeholder="Tekrar"
+                />
+              </div>
+              <button onClick={() => removeWarmupExercise(idx)} className="rounded-lg border px-2 py-2 text-xs hover:bg-gray-50" type="button">✕</button>
             </div>
           ))}
         </div>
@@ -503,8 +449,8 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
       {/* Blocks */}
       <div className="rounded-2xl border bg-white p-4">
         <SectionTitle
-          icon="🏋️"
-          title="Antrenman Blokları"
+          icon=""
+          title="Egzersizler"
           right={
             <button
               onClick={addBlock}
@@ -527,17 +473,9 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
             <div key={bIdx} className="rounded-2xl border p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="w-full">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="md:col-span-2">
-                      <div className="mb-1 text-xs text-gray-500">Blok başlığı</div>
-                      <Input
-                        value={block.title}
-                        onChange={(e) => updateBlockTitle(bIdx, e.target.value)}
-                        placeholder="Antrenman Bloğu"
-                      />
-                    </div>
-
-                    <div className="flex items-end justify-end gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-gray-700">Blok {bIdx + 1}</div>
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => addExerciseToBlock(bIdx)}
                         className="rounded-xl bg-black px-3 py-2 text-sm font-medium text-white"
@@ -593,68 +531,23 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
                               </div>
                             </div>
 
-                            <div className="mt-3 space-y-3">
+                            <div className="mt-3 space-y-2">
                               {(it.items || []).map((ex, sIdx) => (
-                                <div key={sIdx} className="rounded-2xl border bg-white p-4">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="w-full space-y-3">
-                                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                                        <div>
-                                          <div className="mb-1 text-xs text-gray-500">Egzersiz</div>
-                                          <Input
-                                            value={ex.name}
-                                            onChange={(e) =>
-                                              updateSupersetExercise(bIdx, itemIdx, sIdx, { name: e.target.value })
-                                            }
-                                            placeholder="Örn: Dumbbell Flyes"
-                                          />
-                                        </div>
-
-                                        <div>
-                                          <div className="mb-1 text-xs text-gray-500">Set</div>
-                                          <Input
-                                            value={String(ex.sets)}
-                                            onChange={(e) =>
-                                              updateSupersetExercise(bIdx, itemIdx, sIdx, {
-                                                sets: parsePositiveInt(e.target.value),
-                                              })
-                                            }
-                                            placeholder="3"
-                                          />
-                                        </div>
-
-                                        <div>
-                                          <div className="mb-1 text-xs text-gray-500">Tekrar</div>
-                                          <Input
-                                            value={ex.reps}
-                                            onChange={(e) =>
-                                              updateSupersetExercise(bIdx, itemIdx, sIdx, { reps: e.target.value })
-                                            }
-                                            placeholder="12-15"
-                                          />
-                                        </div>
-                                      </div>
-
-                                      <div>
-                                        <div className="mb-1 text-xs text-gray-500">Notlar (isteğe bağlı)</div>
-                                        <Input
-                                          value={ex.notes}
-                                          onChange={(e) =>
-                                            updateSupersetExercise(bIdx, itemIdx, sIdx, { notes: e.target.value })
-                                          }
-                                          placeholder="tempo, dinlenme süresi..."
-                                        />
-                                      </div>
-                                    </div>
-
-                                    <button
-                                      onClick={() => removeExerciseFromSuperset(bIdx, itemIdx, sIdx)}
-                                      className="rounded-xl border px-3 py-2 text-sm font-medium hover:bg-gray-50"
-                                      type="button"
-                                    >
-                                      Remove
-                                    </button>
+                                <div key={sIdx} className="flex items-center gap-2 rounded-xl border bg-white p-3">
+                                  <div className="flex-1 min-w-0">
+                                    <ExerciseSearchInput
+                                      value={ex.name}
+                                      onChange={(name, exercise) => updateSupersetExercise(bIdx, itemIdx, sIdx, { name, exercise_library_id: exercise?.id || ex.exercise_library_id })}
+                                      placeholder="Egzersiz ara..."
+                                    />
                                   </div>
+                                  <div className="w-16">
+                                    <Input value={String(ex.sets)} onChange={(e) => updateSupersetExercise(bIdx, itemIdx, sIdx, { sets: parsePositiveInt(e.target.value) })} placeholder="Set" />
+                                  </div>
+                                  <div className="w-16">
+                                    <Input value={ex.reps} onChange={(e) => updateSupersetExercise(bIdx, itemIdx, sIdx, { reps: e.target.value })} placeholder="Tekrar" />
+                                  </div>
+                                  <button onClick={() => removeExerciseFromSuperset(bIdx, itemIdx, sIdx)} className="rounded-lg border px-2 py-2 text-xs hover:bg-gray-50" type="button">✕</button>
                                 </div>
                               ))}
                             </div>
@@ -665,58 +558,21 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
                       // normal exercise
                       const ex = it;
                       return (
-                        <div key={itemIdx} className="rounded-2xl border p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="w-full space-y-3">
-                              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                                <div>
-                                  <div className="mb-1 text-xs text-gray-500">Egzersiz</div>
-                                  <Input
-                                    value={ex.name}
-                                    onChange={(e) => updateBlockExercise(bIdx, itemIdx, { name: e.target.value })}
-                                    placeholder="Örn: Incline Dumbbell Press"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="mb-1 text-xs text-gray-500">Set</div>
-                                  <Input
-                                    value={String(ex.sets)}
-                                    onChange={(e) =>
-                                      updateBlockExercise(bIdx, itemIdx, { sets: parsePositiveInt(e.target.value) })
-                                    }
-                                    placeholder="3"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="mb-1 text-xs text-gray-500">Tekrar</div>
-                                  <Input
-                                    value={ex.reps}
-                                    onChange={(e) => updateBlockExercise(bIdx, itemIdx, { reps: e.target.value })}
-                                    placeholder="10-12"
-                                  />
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="mb-1 text-xs text-gray-500">Notlar (isteğe bağlı)</div>
-                                <Input
-                                  value={ex.notes}
-                                  onChange={(e) => updateBlockExercise(bIdx, itemIdx, { notes: e.target.value })}
-                                  placeholder="tempo, dinlenme süresi, RPE..."
-                                />
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => removeBlockItem(bIdx, itemIdx)}
-                              className="rounded-xl border px-3 py-2 text-sm font-medium hover:bg-gray-50"
-                              type="button"
-                            >
-                              Remove
-                            </button>
+                        <div key={itemIdx} className="flex items-center gap-2 rounded-xl border p-3">
+                          <div className="flex-1 min-w-0">
+                            <ExerciseSearchInput
+                              value={ex.name}
+                              onChange={(name, exercise) => updateBlockExercise(bIdx, itemIdx, { name, exercise_library_id: exercise?.id || ex.exercise_library_id })}
+                              placeholder="Egzersiz ara..."
+                            />
                           </div>
+                          <div className="w-16">
+                            <Input value={String(ex.sets)} onChange={(e) => updateBlockExercise(bIdx, itemIdx, { sets: parsePositiveInt(e.target.value) })} placeholder="Set" />
+                          </div>
+                          <div className="w-16">
+                            <Input value={ex.reps} onChange={(e) => updateBlockExercise(bIdx, itemIdx, { reps: e.target.value })} placeholder="Tekrar" />
+                          </div>
+                          <button onClick={() => removeBlockItem(bIdx, itemIdx)} className="rounded-lg border px-2 py-2 text-xs hover:bg-gray-50" type="button">✕</button>
                         </div>
                       );
                     })}

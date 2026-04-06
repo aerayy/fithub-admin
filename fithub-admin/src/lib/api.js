@@ -114,6 +114,11 @@ export async function searchFoods(query, { featuredOnly = true } = {}) {
   return res.data.foods ?? [];
 }
 
+export async function searchExercises(query) {
+  const res = await api.get(`/exercises/search?q=${encodeURIComponent(query)}&limit=10`);
+  return res.data.exercises ?? [];
+}
+
 // Response: 401 yakala
 api.interceptors.response.use(
   (res) => res,

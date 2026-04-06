@@ -537,23 +537,13 @@ export default function ProgramsTab() {
   const generateNutritionWithAI = async () => {
     if (!studentId || nutritionGenerating) return;
 
-    const { calories, protein, carbs, fat } = targetMacros;
-    if (!calories || !protein || !carbs || !fat) {
-      setNutritionGenerateError("Lütfen tüm makro değerlerini girin.");
-      return;
-    }
-
     setNutritionGenerating(true);
     setNutritionGenerateError(null);
     setNutritionGenerateSuccess(false);
 
     try {
-      const res = await api.post(`/coach/students/${studentId}/nutrition-programs/generate`, {
-        target_calories: Number(calories),
-        target_protein: Number(protein),
-        target_carbs: Number(carbs),
-        target_fat: Number(fat),
-      });
+      // Send empty payload — backend auto-calculates from onboarding data
+      const res = await api.post(`/coach/students/${studentId}/nutrition-programs/generate`, {});
 
       if (res.data?.week) {
         setNutritionWeek(res.data.week);
@@ -782,7 +772,7 @@ export default function ProgramsTab() {
               : "Aktif beslenme programı yok"
           }
           onEdit={() => setOpen("nutrition")}
-          onGenerate={() => setShowMacroInputs(!showMacroInputs)}
+          onGenerate={generateNutritionWithAI}
           generating={nutritionGenerating}
           isAIGenerated={!isLatestNutritionActive && nutritionSource === "ai"}
           onRemove={latestNutritionProgram?.program_id ? removeNutritionProgram : undefined}
@@ -807,37 +797,7 @@ export default function ProgramsTab() {
               )}
             </div>
           )}
-          {showMacroInputs && (
-            <div className="mb-4 rounded-xl border border-purple-200 bg-purple-50/50 p-4">
-              <div className="text-sm font-semibold text-gray-900 mb-3">Hedef Makrolar</div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div>
-                  <label className="text-xs text-gray-500">Kalori (kcal)</label>
-                  <input type="number" value={targetMacros.calories} onChange={e => setTargetMacros(p => ({...p, calories: e.target.value}))}
-                    className="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-300" placeholder="2500" />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">Protein (g)</label>
-                  <input type="number" value={targetMacros.protein} onChange={e => setTargetMacros(p => ({...p, protein: e.target.value}))}
-                    className="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-300" placeholder="180" />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">Karbonhidrat (g)</label>
-                  <input type="number" value={targetMacros.carbs} onChange={e => setTargetMacros(p => ({...p, carbs: e.target.value}))}
-                    className="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-300" placeholder="280" />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">Yag (g)</label>
-                  <input type="number" value={targetMacros.fat} onChange={e => setTargetMacros(p => ({...p, fat: e.target.value}))}
-                    className="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-300" placeholder="80" />
-                </div>
-              </div>
-              <button onClick={generateNutritionWithAI} disabled={nutritionGenerating}
-                className="mt-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-purple-600 hover:to-purple-700 disabled:opacity-50">
-                {nutritionGenerating ? "Oluşturuluyor..." : "✨ Programı Oluştur"}
-              </button>
-            </div>
-          )}
+          {/* Makro input kaldırıldı — AI öğrenci onboarding verisinden otomatik hesaplar */}
           <div className="mb-3 flex flex-wrap gap-2">
             {DAY_LABELS.map(([k, label]) => (
               <button

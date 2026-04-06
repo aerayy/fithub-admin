@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ProgramsTab from "../components/ProgramsTab";
-import { api, createCoachConversation } from "../lib/api";
+import { api, createCoachConversation, uploadImage } from "../lib/api";
 
 const DAYS = [
   { key: "mon", label: "Pzt" },
@@ -492,14 +492,141 @@ export default function StudentDetail() {
       ) : tab === "programs" ? (
         <ProgramsTab key={programsKey} studentId={Number(id)} activePrograms={data?.active_programs} />
       ) : (
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <div className="text-sm font-semibold text-gray-900">Mesajlar</div>
-          <p className="mt-2 text-sm text-gray-600">
-            Buraya koç-öğrenci mesaj geçmişi + yeni mesaj input'u gelecek.
-          </p>
-        </div>
+        <StudentMessages studentId={Number(id)} studentName={parsed?.ui?.fullName || "Öğrenci"} />
       )}
 
+    </div>
+  );
+}
+
+/* ─── Inline Messages Component ─── */
+function StudentMessages({ studentId, studentName }) {
+  const [conversationId, setConversationId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [body, setBody] = useState("");
+  const [error, setError] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const bottomRef = useRef(null);
+  const fileRef = useRef(null);
+
+  const initConversation = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await api.post("/coach/conversations", { client_user_id: studentId });
+      const convId = data?.conversation?.id;
+      if (!convId) { setError("Konuşma oluşturulamadı."); setLoading(false); return; }
+      setConversationId(convId);
+      const msgRes = await api.get(`/coach/conversations/${convId}/messages?limit=50`);
+      const list = (msgRes.data?.messages || []).reverse();
+      setMessages(list);
+      setHasMore(!!msgRes.data?.has_more);
+    } catch (e) {
+      setError(e?.response?.data?.detail || "Mesajlar yüklenemedi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [studentId]);
+
+  useEffect(() => { initConversation(); }, [initConversation]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
+
+  const loadOlder = async () => {
+    if (!hasMore || loadingMore || !conversationId || messages.length === 0) return;
+    setLoadingMore(true);
+    try {
+      const oldest = messages[0]?.id;
+      const { data } = await api.get(`/coach/conversations/${conversationId}/messages?limit=50&before=${oldest}`);
+      const older = (data?.messages || []).reverse();
+      setMessages((prev) => [...older, ...prev]);
+      setHasMore(!!data?.has_more);
+    } catch {} finally { setLoadingMore(false); }
+  };
+
+  const send = async () => {
+    const text = body.trim();
+    if (!text || sending || !conversationId) return;
+    setSending(true);
+    try {
+      const { data } = await api.post(`/coach/conversations/${conversationId}/messages`, { body: text, message_type: "text" });
+      setMessages((prev) => [...prev, data]);
+      setBody("");
+    } catch {} finally { setSending(false); }
+  };
+
+  const sendImage = async (file) => {
+    if (!file || !conversationId) return;
+    setUploadingImg(true);
+    try {
+      const result = await uploadImage(file);
+      const { data } = await api.post(`/coach/conversations/${conversationId}/messages`, {
+        body: null, message_type: "image", media_url: result.url, media_metadata: { width: result.width, height: result.height },
+      });
+      setMessages((prev) => [...prev, data]);
+    } catch {} finally { setUploadingImg(false); }
+  };
+
+  const fmtTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  };
+
+  if (loading) return <div className="rounded-2xl border bg-white p-8 text-center text-sm text-gray-500">Mesajlar yükleniyor...</div>;
+  if (error) return <div className="rounded-2xl border bg-white p-8 text-center text-sm text-red-600">{error}</div>;
+
+  return (
+    <div className="rounded-2xl border bg-white shadow-sm flex flex-col" style={{ height: "560px" }}>
+      <div className="flex items-center justify-between px-5 py-3 border-b">
+        <div className="text-sm font-semibold text-gray-900">{studentName} ile Mesajlar</div>
+        <button onClick={initConversation} className="text-xs text-gray-500 hover:text-gray-800">Yenile</button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+        {hasMore && (
+          <button onClick={loadOlder} disabled={loadingMore} className="w-full text-center text-xs text-gray-500 hover:text-gray-800 py-2">
+            {loadingMore ? "Yükleniyor..." : "Daha eski mesajlar"}
+          </button>
+        )}
+        {messages.length === 0 && <div className="text-center text-sm text-gray-400 py-8">Henüz mesaj yok.</div>}
+        {messages.map((m) => {
+          const isCoach = m.sender_type === "coach";
+          return (
+            <div key={m.id} className={`flex ${isCoach ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${isCoach ? "bg-black text-white" : "bg-gray-100 text-gray-900"}`}>
+                {m.message_type === "image" && m.media_url && (
+                  <img src={m.media_url} alt="" className="max-w-full max-h-[200px] rounded-lg mb-1 object-cover" />
+                )}
+                {m.body && <div className="text-sm whitespace-pre-wrap">{m.body}</div>}
+                <div className={`text-[10px] mt-1 ${isCoach ? "text-white/50" : "text-gray-400"}`}>{fmtTime(m.created_at)}</div>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      <div className="border-t px-4 py-3 flex items-end gap-2">
+        <input type="file" accept="image/*" ref={fileRef} className="hidden" onChange={(e) => { if (e.target.files[0]) sendImage(e.target.files[0]); e.target.value = ""; }} />
+        <button onClick={() => fileRef.current?.click()} disabled={uploadingImg} className="rounded-xl border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50" title="Fotoğraf gönder">
+          {uploadingImg ? "..." : "📷"}
+        </button>
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+          placeholder="Bir mesaj yazın..."
+          rows={1}
+          className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
+        />
+        <button onClick={send} disabled={sending || !body.trim()} className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white hover:bg-black/90 disabled:opacity-50">
+          {sending ? "..." : "Gönder"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  api,
   getCoachConversations,
   getConversationMessages,
   postConversationMessage,
@@ -57,6 +58,7 @@ export default function Messages() {
   const [sendError, setSendError] = useState(null);
   const [typingMap, setTypingMap] = useState({}); // { conversation_id: timeout }
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [studentDetail, setStudentDetail] = useState(null);
   const messagesEndRef = useRef(null);
   const selectedIdRef = useRef(selectedId);
   const fileInputRef = useRef(null);
@@ -127,6 +129,33 @@ export default function Messages() {
     client_user_id: studentIdInConv(selectedStudent),
   });
   function studentIdInConv(s) { return s?.id ?? s?.user_id ?? s?.student_id; }
+
+  // Fetch student detail + active programs for right panel
+  const clientUserId = chatTarget?.client_user_id;
+  useEffect(() => {
+    if (!clientUserId) { setStudentDetail(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [detailRes, progRes] = await Promise.allSettled([
+          api.get(`/admin/students/${clientUserId}`),
+          api.get(`/coach/students/${clientUserId}/active-programs`),
+        ]);
+        if (cancelled) return;
+        const detail = detailRes.status === "fulfilled" ? detailRes.value.data : null;
+        const progs = progRes.status === "fulfilled" ? progRes.value.data : null;
+        setStudentDetail({ ...detail, _programs: progs });
+      } catch { if (!cancelled) setStudentDetail(null); }
+    })();
+    return () => { cancelled = true; };
+  }, [clientUserId]);
+
+  const GOAL_TR = { gain_muscle: "Kas Geliştir", lose_weight: "Kilo Ver", get_toned: "Sıkılaş", stay_fit: "Fit Kal" };
+  const studentGoal = studentDetail?.onboarding?.your_goal || studentDetail?.student?.goal_type || "";
+  const studentWeight = studentDetail?.onboarding?.weight_kg || studentDetail?.student?.weight_kg;
+  const studentHeight = studentDetail?.onboarding?.height_cm || studentDetail?.student?.height_cm;
+  const hasWorkout = !!studentDetail?._programs?.workout_program;
+  const hasNutrition = !!studentDetail?._programs?.nutrition_program;
 
   const fetchActiveStudents = useCallback(async () => {
     setLoadingStudents(true);
@@ -687,18 +716,30 @@ export default function Messages() {
                 <div className="text-xs text-gray-500">Üye</div>
               </div>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-3">
               <div className="rounded-xl border border-gray-200 p-3">
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Hedef</div>
-                <div className="mt-1 text-sm text-gray-700">{selected?.client_goal || "—"}</div>
+                <div className="mt-1 text-sm font-medium text-gray-800">{GOAL_TR[studentGoal] || studentGoal || "—"}</div>
               </div>
               <div className="rounded-xl border border-gray-200 p-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sonraki seans</div>
-                <div className="mt-1 text-sm text-gray-700">{selected?.next_session || "—"}</div>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Vücut</div>
+                <div className="mt-1 text-sm text-gray-700">
+                  {studentWeight ? `${studentWeight} kg` : "—"}
+                  {studentHeight ? ` · ${studentHeight} cm` : ""}
+                </div>
               </div>
               <div className="rounded-xl border border-gray-200 p-3">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Notlar</div>
-                <div className="mt-1 text-sm text-gray-600">{selected?.notes || "—"}</div>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Program Durumu</div>
+                <div className="mt-1.5 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${hasWorkout ? "bg-green-500" : "bg-gray-300"}`} />
+                    <span className="text-sm text-gray-700">Antrenman</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${hasNutrition ? "bg-green-500" : "bg-gray-300"}`} />
+                    <span className="text-sm text-gray-700">Beslenme</span>
+                  </div>
+                </div>
               </div>
             </div>
           </>

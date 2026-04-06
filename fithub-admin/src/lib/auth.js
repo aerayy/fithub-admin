@@ -26,7 +26,6 @@ export async function signup(email, password, fullName) {
       is_active: true,
     };
 
-    console.log("Signup request to /admin/coaches:", requestBody);
     
     const { data } = await api.post("/admin/coaches", requestBody, {
       headers: {
@@ -34,7 +33,6 @@ export async function signup(email, password, fullName) {
       },
     });
     
-    console.log("Signup response:", data);
     
     // Backend'den token dönerse kaydet
     if (data.token || data.access_token) {

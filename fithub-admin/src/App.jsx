@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import AdminLayout from "./layouts/AdminLayout";
+import SuperAdminLayout from "./layouts/SuperAdminLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -11,6 +12,10 @@ import Students from "./pages/Students";
 import StudentDetail from "./pages/StudentDetail";
 import MyProfile from "./pages/MyProfile";
 import Messages from "./pages/Messages";
+import SADashboard from "./pages/superadmin/SADashboard";
+import SACoaches from "./pages/superadmin/SACoaches";
+import SAStudents from "./pages/superadmin/SAStudents";
+import SASubscriptions from "./pages/superadmin/SASubscriptions";
 
 export default function App() {
   return (
@@ -44,6 +49,21 @@ export default function App() {
 
           {/* Fallback inside admin */}
           <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+
+        {/* SUPERADMIN AREA */}
+        <Route
+          path="/sa"
+          element={
+            <ProtectedRoute>
+              <SuperAdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<SADashboard />} />
+          <Route path="coaches" element={<SACoaches />} />
+          <Route path="students" element={<SAStudents />} />
+          <Route path="subscriptions" element={<SASubscriptions />} />
         </Route>
 
         {/* Global fallback */}

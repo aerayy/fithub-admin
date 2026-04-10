@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, uploadImage } from "../lib/api";
 import { useToast } from "../components/Toast";
+import { translateError } from "../lib/errorHandler";
 
 function toCommaString(arr) {
   if (!arr) return "";
@@ -150,7 +151,9 @@ export default function MyProfile() {
       });
     } catch (e) {
       console.error("Profile fetch error:", e?.response?.status, e?.response?.data);
-      setError(e?.response?.data?.detail || "Profil yüklenemedi.");
+      const msg = translateError(e);
+      setError(msg);
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -173,21 +176,9 @@ export default function MyProfile() {
       setPkgError(""); // Clear error on success
     } catch (e) {
       console.error("Packages fetch error:", e?.response?.status, e?.response?.data);
-      
-      // Handle error message safely
-      let errorMsg = "Paketler yüklenemedi.";
-      const errorData = e?.response?.data;
-      if (errorData?.message) {
-        errorMsg = String(errorData.message);
-      } else if (errorData?.detail) {
-        if (Array.isArray(errorData.detail)) {
-          errorMsg = errorData.detail.map(err => err.msg || JSON.stringify(err)).join('. ');
-        } else {
-          errorMsg = String(errorData.detail);
-        }
-      }
-      
-      setPkgError(errorMsg);
+      const msg = translateError(e);
+      setPkgError(msg);
+      showToast(msg, "error");
       setPackages([]); // Set empty array on error
     } finally {
       setPkgLoading(false);
@@ -254,31 +245,9 @@ export default function MyProfile() {
       }
     } catch (e) {
       console.error("Profile save error:", e?.response?.status, e?.response?.data);
-      
-      // Handle FastAPI validation errors (422)
-      let errorMsg = "Kaydedilemedi.";
-      const errorData = e?.response?.data;
-      
-      if (errorData) {
-        if (errorData.message) {
-          errorMsg = String(errorData.message);
-        } else if (errorData.detail) {
-          if (Array.isArray(errorData.detail)) {
-            errorMsg = errorData.detail.map(err => {
-              const field = err.loc?.join('.') || 'field';
-              return `${field}: ${err.msg || 'Invalid value'}`;
-            }).join('. ') || "Validation hatası";
-          } else if (typeof errorData.detail === 'string') {
-            errorMsg = errorData.detail;
-          } else if (typeof errorData.detail === 'object') {
-            errorMsg = errorData.detail.msg || JSON.stringify(errorData.detail);
-          }
-        }
-      } else if (e?.message) {
-        errorMsg = String(e.message);
-      }
-      
-      setError(errorMsg);
+      const msg = translateError(e);
+      setError(msg);
+      showToast(msg, "error");
     } finally {
       setSavingProfile(false);
     }
@@ -338,32 +307,9 @@ export default function MyProfile() {
       }
     } catch (e) {
       console.error("Package create error:", e?.response?.status, e?.response?.data);
-      
-      // Handle FastAPI validation errors (422) - detail can be array or object
-      let errorMsg = "Paket oluşturulamadı.";
-      const errorData = e?.response?.data;
-      
-      if (errorData) {
-        if (errorData.message) {
-          errorMsg = String(errorData.message);
-        } else if (errorData.detail) {
-          if (Array.isArray(errorData.detail)) {
-            // FastAPI validation errors: [{type, loc, msg, input}, ...]
-            errorMsg = errorData.detail.map(err => {
-              const field = err.loc?.join('.') || 'field';
-              return `${field}: ${err.msg || 'Invalid value'}`;
-            }).join('. ') || "Validation hatası";
-          } else if (typeof errorData.detail === 'string') {
-            errorMsg = errorData.detail;
-          } else if (typeof errorData.detail === 'object') {
-            errorMsg = errorData.detail.msg || JSON.stringify(errorData.detail);
-          }
-        }
-      } else if (e?.message) {
-        errorMsg = String(e.message);
-      }
-      
-      setPkgError(errorMsg);
+      const msg = translateError(e);
+      setPkgError(msg);
+      showToast(msg, "error");
       // Don't close modal on error, keep form data
     } finally {
       setCreating(false);
@@ -409,31 +355,9 @@ export default function MyProfile() {
       await fetchPackages();
     } catch (e) {
       console.error("Package update error:", e?.response?.status, e?.response?.data);
-      
-      // Handle FastAPI validation errors (422)
-      let errorMsg = "Paket güncellenemedi.";
-      const errorData = e?.response?.data;
-      
-      if (errorData) {
-        if (errorData.message) {
-          errorMsg = String(errorData.message);
-        } else if (errorData.detail) {
-          if (Array.isArray(errorData.detail)) {
-            errorMsg = errorData.detail.map(err => {
-              const field = err.loc?.join('.') || 'field';
-              return `${field}: ${err.msg || 'Invalid value'}`;
-            }).join('. ') || "Validation hatası";
-          } else if (typeof errorData.detail === 'string') {
-            errorMsg = errorData.detail;
-          } else if (typeof errorData.detail === 'object') {
-            errorMsg = errorData.detail.msg || JSON.stringify(errorData.detail);
-          }
-        }
-      } else if (e?.message) {
-        errorMsg = String(e.message);
-      }
-      
-      setPkgError(errorMsg);
+      const msg = translateError(e);
+      setPkgError(msg);
+      showToast(msg, "error");
       // Don't close modal on error, keep form data
     } finally {
       setEditSaving(false);
@@ -448,7 +372,9 @@ export default function MyProfile() {
       await fetchPackages();
     } catch (e) {
       console.error("Package delete error:", e?.response?.status, e?.response?.data);
-      setPkgError(e?.response?.data?.detail || "Paket silinemedi.");
+      const msg = translateError(e);
+      setPkgError(msg);
+      showToast(msg, "error");
     }
   };
 

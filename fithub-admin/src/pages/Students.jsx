@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import { useToast } from "../components/Toast";
+import { translateError } from "../lib/errorHandler";
 
 const GOAL_TR = {
   gain_muscle: "Kas Geliştir",
@@ -12,6 +14,7 @@ const GOAL_TR = {
 export default function Students() {
   const nav = useNavigate();
   const loc = useLocation();
+  const { showToast, ToastContainer } = useToast();
 
   const [q, setQ] = useState("");
   const [students, setStudents] = useState([]);
@@ -41,7 +44,9 @@ export default function Students() {
       setStudents(data?.students || []);
     } catch (e) {
       console.error("Students fetch error:", e?.response?.status, e?.response?.data);
-      setError(e?.response?.data?.detail || "Öğrenciler yüklenemedi");
+      const msg = translateError(e);
+      setError(msg);
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -64,9 +69,15 @@ export default function Students() {
 
       // Mevcut tab'ı yenile
       await fetchStudents(tab);
+      showToast(
+        decision === "approve"
+          ? "Abonelik onaylandı."
+          : "Abonelik reddedildi.",
+        "success"
+      );
     } catch (e) {
       console.error("Decision error:", e?.response?.status, e?.response?.data);
-      setError(e?.response?.data?.detail || "İşlem başarısız");
+      showToast(translateError(e), "error");
     }
   };
 
@@ -213,6 +224,7 @@ export default function Students() {
 
   return (
     <div className="space-y-6">
+      <ToastContainer />
       {error ? <div className="text-red-600">{error}</div> : null}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

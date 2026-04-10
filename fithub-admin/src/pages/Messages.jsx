@@ -12,6 +12,8 @@ import {
   uploadImage,
 } from "../lib/api";
 import useWebSocket from "../hooks/useWebSocket";
+import { useToast } from "../components/Toast";
+import { translateError } from "../lib/errorHandler";
 
 function formatMessageTime(iso) {
   if (!iso) return "";
@@ -41,6 +43,7 @@ function formatDateSeparator(iso) {
 const AVATAR_PLACEHOLDER = "https://api.dicebear.com/7.x/avataaars/svg?seed=";
 
 export default function Messages() {
+  const { showToast, ToastContainer } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -164,10 +167,11 @@ export default function Messages() {
       setActiveStudents(list);
     } catch (e) {
       console.error("Active students fetch error:", e?.response?.data);
+      showToast(translateError(e), "error");
     } finally {
       setLoadingStudents(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     fetchActiveStudents();
@@ -194,11 +198,12 @@ export default function Messages() {
       return list;
     } catch (e) {
       console.error("Conversations fetch error:", e?.response?.data);
+      showToast(translateError(e), "error");
       return [];
     } finally {
       setLoadingList(false);
     }
-  }, [selectedId, searchParams, setSearchParams]);
+  }, [selectedId, searchParams, setSearchParams, showToast]);
 
   useEffect(() => {
     fetchConversations();
@@ -221,11 +226,12 @@ export default function Messages() {
       setHasMore(!!has_more);
     } catch (e) {
       console.error("Messages fetch error:", e?.response?.data);
+      showToast(translateError(e), "error");
     } finally {
       setLoadingMessages(false);
       setLoadingMore(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -298,10 +304,8 @@ export default function Messages() {
           await fetchConversations();
         }
       } catch (e) {
-        const msg = e?.message === "Network Error"
-          ? `Bağlantı hatası. ${getApiBaseUrl()}`
-          : (e?.response?.data?.detail ?? e?.message ?? "Konuşma oluşturulamadı.");
-        setSendError(msg);
+        console.error("createCoachConversation error:", e);
+        setSendError(translateError(e));
         setSending(false);
         return;
       }
@@ -338,10 +342,8 @@ export default function Messages() {
         fetchConversations();
       }
     } catch (e) {
-      const msg = e?.message === "Network Error"
-        ? `Bağlantı hatası. ${getApiBaseUrl()}`
-        : (e?.response?.data?.detail ?? e?.message ?? "Mesaj gönderilemedi.");
-      setSendError(msg);
+      console.error("sendMessage error:", e);
+      setSendError(translateError(e));
     } finally {
       setSending(false);
     }
@@ -359,7 +361,8 @@ export default function Messages() {
       const data = await uploadImage(file);
       await sendMessage({ imageData: data });
     } catch (err) {
-      setSendError(err?.response?.data?.detail ?? err?.message ?? "Fotoğraf yüklenemedi.");
+      console.error("Image upload error:", err);
+      setSendError(translateError(err));
     } finally {
       setUploadingImage(false);
     }
@@ -418,6 +421,7 @@ export default function Messages() {
 
   return (
     <div className="flex h-[calc(100vh-120px)] min-h-0 rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <ToastContainer />
       {/* Left: conversation list */}
       <div className="w-[320px] flex flex-col border-r border-gray-200 bg-gray-50/50">
         <div className="p-4 border-b border-gray-200">

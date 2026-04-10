@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import ProgramsTab from "../components/ProgramsTab";
 import { api, createCoachConversation, uploadImage } from "../lib/api";
 import { useToast } from "../components/Toast";
+import { translateError } from "../lib/errorHandler";
 
 const DAYS = [
   { key: "mon", label: "Pzt" },
@@ -300,14 +301,15 @@ export default function StudentDetail() {
       setTab("programs");
       setProgramsKey((k) => k + 1); // Force ProgramsTab refresh
     } catch (e) {
-      const errorMsg =
-        e?.response?.data?.detail || e?.message || "Atama başarısız";
-      if (e?.response?.status === 404) {
-        showToast("Henüz atanacak kaydedilmiş bir program yok. Lütfen önce bir taslak kaydedin.", "error");
-      } else {
-        showToast(errorMsg, "error");
-      }
       console.error("Assign program error:", e);
+      if (e?.response?.status === 404) {
+        showToast(
+          "Henüz atanacak kaydedilmiş bir program yok. Lütfen önce bir taslak kaydedin.",
+          "error"
+        );
+      } else {
+        showToast(translateError(e), "error");
+      }
     } finally {
       setAssignLoading(false);
     }
@@ -354,6 +356,7 @@ export default function StudentDetail() {
                 navigate(`/messages?conversation=${conv.id}`);
               } catch (e) {
                 console.error("Failed to open chat:", e);
+                showToast(translateError(e), "error");
               }
             }}
           >

@@ -18,9 +18,11 @@ export default function Login() {
       await login(email, password);
       navigate("/");
     } catch (err) {
-      const errorMessage = err?.response?.data?.message || 
-                          err?.response?.data?.error || 
-                          "Email veya şifre hatalı";
+      // 401 → almost always wrong credentials
+      const status = err?.response?.status;
+      const errorMessage = status === 401
+        ? "E-posta veya şifre hatalı."
+        : (err.userMessage || "Giriş yapılamadı. Lütfen tekrar deneyin.");
       setError(errorMessage);
     } finally {
       setLoading(false);

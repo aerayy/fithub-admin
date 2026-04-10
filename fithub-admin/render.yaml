@@ -2,6 +2,7 @@ services:
   - type: web
     name: fithub-admin
     runtime: static
+    rootDir: fithub-admin
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: false

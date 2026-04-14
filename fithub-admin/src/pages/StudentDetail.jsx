@@ -276,6 +276,10 @@ export default function StudentDetail() {
   const [formPhotosLoading, setFormPhotosLoading] = useState(true);
   const [formPhotoModal, setFormPhotoModal] = useState(null); // {url, label}
 
+  // Activity log
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+
   const fetchStudent = () => {
     setLoading(true);
     setError("");
@@ -320,6 +324,24 @@ export default function StudentDetail() {
       })
       .finally(() => {
         if (alive) setFormPhotosLoading(false);
+      });
+    return () => { alive = false; };
+  }, [id]);
+
+  // Fetch activity log
+  useEffect(() => {
+    let alive = true;
+    setActivitiesLoading(true);
+    api
+      .get(`/coach/students/${id}/activity?limit=50`)
+      .then((res) => {
+        if (alive) setActivities(res.data?.activities || []);
+      })
+      .catch(() => {
+        if (alive) setActivities([]);
+      })
+      .finally(() => {
+        if (alive) setActivitiesLoading(false);
       });
     return () => { alive = false; };
   }, [id]);
@@ -472,7 +494,9 @@ export default function StudentDetail() {
 
       {/* Content */}
       {tab === "overview" ? (
-        <div className="space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ─── SOL: Onboarding Bilgileri (2/3) ─── */}
+        <div className="lg:col-span-2 space-y-5">
           {/* ─── Kişisel Bilgiler ─── */}
           <Section title="Kişisel Bilgiler" cols={3}>
             <Field label="Cinsiyet" value={tr(s.ui.gender)} />
@@ -550,6 +574,67 @@ export default function StudentDetail() {
             <Field label="Uyuma saati" value={s.onboarding.sleep_time || "-"} />
             <Field label="Antrenman saati" value={s.onboarding.preferred_workout_hours || "-"} />
           </Section>
+        </div>
+
+        {/* ─── SAĞ: Aktivite Log'ları (1/3) ─── */}
+        <div className="lg:col-span-1">
+          <div className="rounded-2xl border bg-white shadow-sm sticky top-4">
+            <div className="border-b bg-gray-50/50 px-5 py-3 flex items-center gap-2">
+              <span className="text-base">🔔</span>
+              <span className="text-sm font-bold text-gray-800">Aktivite Bildirimleri</span>
+              {activities.length > 0 && (
+                <span className="ml-auto rounded-full bg-black px-2 py-0.5 text-[10px] font-bold text-white">{activities.length}</span>
+              )}
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto divide-y">
+              {activitiesLoading ? (
+                <div className="p-5 text-center text-xs text-gray-400">Yükleniyor...</div>
+              ) : activities.length === 0 ? (
+                <div className="p-5 text-center">
+                  <div className="text-xs text-gray-400">Henüz aktivite yok</div>
+                  <div className="text-[10px] text-gray-300 mt-1">Öğrenci aksiyon aldığında burada görünecek</div>
+                </div>
+              ) : (
+                activities.map((a) => {
+                  const icons = {
+                    meal_photo: { icon: "🍽️", bg: "bg-green-50", border: "border-green-200" },
+                    form_photo: { icon: "📸", bg: "bg-blue-50", border: "border-blue-200" },
+                    workout_complete: { icon: "💪", bg: "bg-purple-50", border: "border-purple-200" },
+                    message: { icon: "💬", bg: "bg-gray-50", border: "border-gray-200" },
+                  };
+                  const style = icons[a.action_type] || icons.message;
+                  const timeAgo = (() => {
+                    if (!a.created_at) return "";
+                    const diff = Date.now() - new Date(a.created_at).getTime();
+                    const mins = Math.floor(diff / 60000);
+                    if (mins < 1) return "Az önce";
+                    if (mins < 60) return `${mins} dk önce`;
+                    const hours = Math.floor(mins / 60);
+                    if (hours < 24) return `${hours} saat önce`;
+                    const days = Math.floor(hours / 24);
+                    return `${days} gün önce`;
+                  })();
+
+                  return (
+                    <div key={a.id} className="flex items-start gap-3 px-4 py-3">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${style.bg} ${style.border}`}>
+                        <span className="text-sm">{style.icon}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-medium text-gray-800 leading-snug">{a.title}</div>
+                        {a.detail && <div className="text-[10px] text-gray-500 mt-0.5">{a.detail}</div>}
+                        <div className="text-[10px] text-gray-400 mt-1">{timeAgo}</div>
+                      </div>
+                      {a.photo_url && (
+                        <img src={a.photo_url} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover" loading="lazy" />
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
         </div>
       ) : tab === "programs" ? (
         <ProgramsTab key={programsKey} studentId={Number(id)} activePrograms={data?.active_programs} />

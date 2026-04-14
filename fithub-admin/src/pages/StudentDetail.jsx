@@ -91,6 +91,41 @@ const TR = {
   gym: "Spor salonunda",
   studio_classes: "Stüdyo dersleri",
   outdoor: "Açık havada",
+  // Health problems
+  bel_fitigi: "Bel Fıtığı",
+  diz_sorunu: "Diz Sorunu",
+  omuz_sakatligi: "Omuz Sakatlığı",
+  tansiyon: "Tansiyon",
+  diyabet: "Diyabet",
+  tiroid: "Tiroid",
+  astim: "Astım",
+  kalp: "Kalp Rahatsızlığı",
+  yok: "Yok",
+  // Food allergies
+  gluten: "Gluten",
+  laktoz: "Laktoz",
+  fistik: "Fıstık / Kuruyemiş",
+  deniz_urunleri: "Deniz Ürünleri",
+  yumurta: "Yumurta",
+  soya: "Soya",
+  kirmizi_et: "Kırmızı Et",
+  // Supplements
+  protein_tozu: "Protein Tozu",
+  bcaa: "BCAA",
+  kreatin: "Kreatin",
+  l_carnitine: "L-Carnitine",
+  multivitamin: "Multivitamin",
+  balik_yagi: "Balık Yağı",
+  glutamine: "Glutamine",
+  zma: "ZMA / Çinko",
+  // Days
+  Monday: "Pazartesi",
+  Tuesday: "Salı",
+  Wednesday: "Çarşamba",
+  Thursday: "Perşembe",
+  Friday: "Cuma",
+  Saturday: "Cumartesi",
+  Sunday: "Pazar",
 };
 
 /** DB'den gelen değeri Türkçe'ye çevir, bulamazsa orijinali döndür */
@@ -103,18 +138,29 @@ const tr = (v) => {
 /** Dizi elemanlarını Türkçe'ye çevir */
 const trArr = (arr) => (Array.isArray(arr) ? arr.map(tr) : arr);
 
-const Section = ({ title, children }) => (
-  <div className="rounded-2xl border bg-white p-5 shadow-sm">
-    <div className="mb-4 text-sm font-semibold text-gray-900">{title}</div>
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>
+const SECTION_ICONS = {
+  "Kişisel Bilgiler": "👤",
+  "Hedef ve Deneyim": "🎯",
+  "Antrenman Tercihleri": "💪",
+  "Sağlık ve Beslenme": "🩺",
+  "Günlük Düzen": "⏰",
+};
+
+const Section = ({ title, children, cols = 2 }) => (
+  <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+    <div className="border-b bg-gray-50/50 px-5 py-3 flex items-center gap-2">
+      <span className="text-base">{SECTION_ICONS[title] || "📋"}</span>
+      <span className="text-sm font-bold text-gray-800">{title}</span>
+    </div>
+    <div className={`grid grid-cols-1 gap-x-6 gap-y-4 p-5 ${cols === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>{children}</div>
   </div>
 );
 
-const Field = ({ label, value }) => (
+const Field = ({ label, value, highlight }) => (
   <div>
-    <div className="text-xs text-gray-500">{label}</div>
-    <div className="mt-1 text-sm font-medium text-gray-900">
-      {value === 0 ? "0" : value ? value : "-"}
+    <div className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{label}</div>
+    <div className={`mt-1 text-sm font-semibold ${highlight ? "text-emerald-600" : "text-gray-900"}`}>
+      {value === 0 ? "0" : value ? value : <span className="text-gray-300 font-normal">—</span>}
     </div>
   </div>
 );
@@ -132,17 +178,25 @@ const TabButton = ({ active, children, onClick }) => (
   </button>
 );
 
-const BadgeList = ({ items }) => {
+const BadgeList = ({ items, color = "gray" }) => {
   const arr = Array.isArray(items) ? items : [];
   if (!arr.length)
-    return <span className="text-sm font-medium text-gray-900">-</span>;
+    return <span className="text-gray-300 text-sm">—</span>;
+
+  const colors = {
+    gray: "bg-gray-100 text-gray-700 border-gray-200",
+    blue: "bg-blue-50 text-blue-700 border-blue-200",
+    green: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    red: "bg-red-50 text-red-700 border-red-200",
+    purple: "bg-purple-50 text-purple-700 border-purple-200",
+  };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {arr.map((x, i) => (
         <span
           key={`${x}-${i}`}
-          className="rounded-full border bg-gray-50 px-3 py-1 text-xs font-medium text-gray-800"
+          className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${colors[color] || colors.gray}`}
         >
           {String(x)}
         </span>
@@ -217,6 +271,11 @@ export default function StudentDetail() {
   // Assign modal state (keeping for backward compatibility but not using modal approach)
   const [assignLoading, setAssignLoading] = useState(false);
 
+  // Body form photos
+  const [formPhotos, setFormPhotos] = useState([]);
+  const [formPhotosLoading, setFormPhotosLoading] = useState(true);
+  const [formPhotoModal, setFormPhotoModal] = useState(null); // {url, label}
+
   const fetchStudent = () => {
     setLoading(true);
     setError("");
@@ -244,6 +303,25 @@ export default function StudentDetail() {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // Fetch body form photos
+  useEffect(() => {
+    let alive = true;
+    setFormPhotosLoading(true);
+    api
+      .get(`/coach/students/${id}/body-form-photos`)
+      .then((res) => {
+        if (alive) setFormPhotos(res.data?.photos || []);
+      })
+      .catch((e) => {
+        console.error("[FormPhotos] Error:", e?.response?.status, e?.response?.data);
+        if (alive) setFormPhotos([]);
+      })
+      .finally(() => {
+        if (alive) setFormPhotosLoading(false);
+      });
+    return () => { alive = false; };
   }, [id]);
 
   const s = useMemo(() => {
@@ -381,6 +459,12 @@ export default function StudentDetail() {
         <TabButton active={tab === "programs"} onClick={() => setTab("programs")}>
           Programlar
         </TabButton>
+        <TabButton active={tab === "meal-photos"} onClick={() => setTab("meal-photos")}>
+          Öğün Fotoğrafları
+        </TabButton>
+        <TabButton active={tab === "form-analysis"} onClick={() => setTab("form-analysis")}>
+          Form Analizi
+        </TabButton>
         <TabButton active={tab === "messages"} onClick={() => setTab("messages")}>
           Mesajlar
         </TabButton>
@@ -388,120 +472,589 @@ export default function StudentDetail() {
 
       {/* Content */}
       {tab === "overview" ? (
-        <div className="space-y-6">
-          <Section title="Hedef ve Profil">
-            <Field label="Ana hedef" value={tr(s.ui.goal)} />
+        <div className="space-y-5">
+          {/* ─── Kişisel Bilgiler ─── */}
+          <Section title="Kişisel Bilgiler" cols={3}>
             <Field label="Cinsiyet" value={tr(s.ui.gender)} />
             <Field label="Yaş" value={s.ui.age} />
-            <Field
-              label="Onboarding tamamlandı"
-              value={s.student.onboarding_done ? "Evet" : "Hayır"}
-            />
-            <Field label="Saat dilimi" value={s.student.timezone} />
+            <Field label="Doğum tarihi" value={s.student.birthdate || s.student.date_of_birth} />
+            <Field label="Boy" value={s.ui.height !== "-" ? `${s.ui.height} cm` : "-"} />
+            <Field label="Kilo" value={s.ui.weight !== "-" ? `${s.ui.weight} kg` : "-"} highlight />
+            <Field label="Hedef kilo" value={s.onboarding.target_weight_kg ? `${s.onboarding.target_weight_kg} kg` : "-"} highlight />
           </Section>
 
-          <Section title="Vücut Bilgileri">
-            <Field label="Boy (cm)" value={s.ui.height} />
-            <Field label="Kilo (kg)" value={s.ui.weight} />
-            <Field label="Doğum tarihi" value={s.student.date_of_birth} />
-          </Section>
-
-          <Section title="Yaşam Tarzı (onboarding)">
-            <Field label="Aktivite seviyesi" value={tr(s.ui.activity)} />
-            <Field label="Deneyim" value={tr(s.onboarding.experience)} />
-            <Field
-              label="Tercih edilen antrenman süresi"
-              value={tr(s.onboarding.pref_workout_length)}
-            />
-            <Field label="Motivasyon seviyesi" value={tr(s.onboarding.how_motivated)} />
-          </Section>
-
-          <Section title="Sakatlıklar ve Kısıtlamalar">
-            <Field label="Diz ağrısı" value={tr(s.onboarding.knee_pain)} />
-            <Field label="Şınav sayısı" value={s.onboarding.pushups} />
-            <Field label="Stres düzeyi" value={tr(s.onboarding.stressed)} />
-          </Section>
-
-          <Section title="Tercihler">
+          {/* ─── Hedef ve Deneyim ─── */}
+          <Section title="Hedef ve Deneyim">
+            <Field label="Ana hedef" value={tr(s.ui.goal)} />
             <Field label="Vücut tipi" value={tr(s.onboarding.body_type)} />
-            <Field label="Plan tercihi" value={tr(s.onboarding.plan_reference)} />
-            <Field label="Bağlılık süresi" value={tr(s.onboarding.commit)} />
-            <Field label="Fitness seviyesi" value={tr(s.onboarding.how_fit)} />
-          </Section>
-
-          {/* JSONB / list alanları chip */}
-          <Section title="Odak ve Alışkanlıklar (çoklu seçim)">
+            <Field label="Deneyim" value={tr(s.onboarding.experience)} />
+            <Field label="Diz ağrısı" value={tr(s.onboarding.knee_pain)} />
             <div className="sm:col-span-2">
               <div className="text-xs text-gray-500">Odak bölgeleri</div>
-              <div className="mt-2">
-                <BadgeList items={trArr(tryParseJSON(s.onboarding.body_part_focus))} />
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-              <div className="text-xs text-gray-500">Kötü alışkanlıklar</div>
-              <div className="mt-2">
-                <BadgeList items={trArr(tryParseJSON(s.onboarding.bad_habit))} />
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-              <div className="text-xs text-gray-500">Motivasyon kaynakları</div>
-              <div className="mt-2">
-                <BadgeList items={trArr(tryParseJSON(s.onboarding.what_motivate))} />
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-              <div className="text-xs text-gray-500">Antrenman yeri</div>
-              <div className="mt-2">
-                <BadgeList items={trArr(tryParseJSON(s.onboarding.workout_place))} />
+              <div className="mt-1.5">
+                <BadgeList items={trArr(tryParseJSON(s.onboarding.body_part_focus))} color="blue" />
               </div>
             </div>
           </Section>
 
-          <Collapse
-            title="Daha fazla detay (tüm onboarding alanları)"
-            open={showMore}
-            onToggle={() => setShowMore((v) => !v)}
-          >
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {Object.entries(s.onboarding || {})
-                .filter(
-                  ([k]) =>
-                    !["id", "user_id", "created_at", "updated_at"].includes(k)
-                )
-                .map(([k, v]) => {
-                  if (typeof v === "object" && v !== null) {
-                    const arr = Array.isArray(v) ? v : [];
-                    return (
-                      <Field
-                        key={k}
-                        label={prettyKey(k)}
-                        value={arr.map(tr).join(", ") || JSON.stringify(v)}
-                      />
-                    );
-                  }
-                  return (
-                    <Field key={k} label={prettyKey(k)} value={tr(v)} />
-                  );
-                })}
+          {/* ─── Antrenman Tercihleri ─── */}
+          <Section title="Antrenman Tercihleri">
+            <Field label="Antrenman süresi" value={tr(s.onboarding.pref_workout_length)} />
+            <Field label="Antrenman saati" value={s.onboarding.preferred_workout_hours || "-"} />
+            <div className="sm:col-span-2">
+              <div className="text-xs text-gray-500">Antrenman yeri</div>
+              <div className="mt-1.5">
+                <BadgeList items={trArr(tryParseJSON(s.onboarding.workout_place))} color="green" />
+              </div>
             </div>
+            <div className="sm:col-span-2">
+              <div className="text-xs text-gray-500">Tercih edilen günler</div>
+              <div className="mt-1.5">
+                <BadgeList items={trArr(tryParseJSON(s.onboarding.preferred_workout_days))} color="blue" />
+              </div>
+            </div>
+          </Section>
 
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Onboarding oluşturulma" value={s.onboarding.created_at} />
-              <Field label="Onboarding güncelleme" value={s.onboarding.updated_at} />
+          {/* ─── Sağlık ve Beslenme ─── */}
+          <Section title="Sağlık ve Beslenme">
+            <div className="sm:col-span-2">
+              <div className="text-xs text-gray-500">Sağlık sorunları</div>
+              <div className="mt-1.5">
+                <BadgeList items={trArr(tryParseJSON(s.onboarding.health_problems))} color="red" />
+              </div>
+              {s.onboarding.health_problems_other && (
+                <div className="mt-1 text-xs text-gray-600">Diğer: {s.onboarding.health_problems_other}</div>
+              )}
             </div>
-          </Collapse>
+            <div className="sm:col-span-2">
+              <div className="text-xs text-gray-500">Besin alerjileri / yasaklar</div>
+              <div className="mt-1.5">
+                <BadgeList items={trArr(tryParseJSON(s.onboarding.food_allergies))} color="red" />
+              </div>
+              {s.onboarding.food_allergies_other && (
+                <div className="mt-1 text-xs text-gray-600">Diğer: {s.onboarding.food_allergies_other}</div>
+              )}
+            </div>
+            <div className="sm:col-span-2">
+              <div className="text-xs text-gray-500">Supplement kullanımı</div>
+              <div className="mt-1.5">
+                <BadgeList items={trArr(tryParseJSON(s.onboarding.supplements))} color="purple" />
+              </div>
+            </div>
+            <Field label="Beslenme bütçesi" value={tr(s.onboarding.nutrition_budget)} />
+          </Section>
+
+          {/* ─── Günlük Düzen ─── */}
+          <Section title="Günlük Düzen">
+            <Field label="Uyanma saati" value={s.onboarding.wakeup_time || "-"} />
+            <Field label="Uyuma saati" value={s.onboarding.sleep_time || "-"} />
+            <Field label="Antrenman saati" value={s.onboarding.preferred_workout_hours || "-"} />
+          </Section>
         </div>
       ) : tab === "programs" ? (
         <ProgramsTab key={programsKey} studentId={Number(id)} activePrograms={data?.active_programs} />
+      ) : tab === "meal-photos" ? (
+        <MealPhotosTab studentId={Number(id)} />
+      ) : tab === "form-analysis" ? (
+        <BodyFormSection
+          photos={formPhotos}
+          loading={formPhotosLoading}
+          onPhotoClick={(url, label) => setFormPhotoModal({ url, label })}
+          studentId={Number(id)}
+        />
       ) : (
         <StudentMessages studentId={Number(id)} studentName={parsed?.ui?.fullName || "Öğrenci"} />
       )}
 
       <ToastContainer />
+
+      {/* Full-size photo modal */}
+      {formPhotoModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setFormPhotoModal(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-[90vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={formPhotoModal.url}
+              alt={formPhotoModal.label}
+              className="max-h-[85vh] rounded-2xl object-contain"
+            />
+            <div className="mt-2 text-center text-sm font-medium text-white">
+              {formPhotoModal.label}
+            </div>
+            <button
+              onClick={() => setFormPhotoModal(null)}
+              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-800 shadow-lg hover:bg-gray-100"
+              type="button"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/* ─── Body Form Photos Section ─── */
+const ANGLE_LABELS = {
+  front: "Ön",
+  back: "Arka",
+  left_side: "Sol Yan",
+  right_side: "Sağ Yan",
+};
+const ANGLE_ORDER = ["front", "back", "left_side", "right_side"];
+
+function BodyFormSection({ photos, loading, onPhotoClick, studentId, frequencyDays: initialFreq }) {
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [compareIdx, setCompareIdx] = useState(null);
+  const [compareAngle, setCompareAngle] = useState(null); // angle to compare
+  const [frequency, setFrequency] = useState(initialFreq || 30);
+  const [savingFreq, setSavingFreq] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const { showToast, ToastContainer: FormToast } = useToast();
+
+  const fetchHistory = () => {
+    if (!studentId) return;
+    setHistoryLoading(true);
+    api.get(`/coach/students/${studentId}/body-form-photos/history`)
+      .then((res) => setHistory(res.data?.history || []))
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false));
+  };
+
+  const saveFrequency = async (days) => {
+    setSavingFreq(true);
+    try {
+      await api.post(`/coach/students/${studentId}/body-form-settings`, { frequency_days: days });
+      setFrequency(days);
+    } catch {} finally { setSavingFreq(false); }
+  };
+
+  const requestFormPhotos = async () => {
+    setRequesting(true);
+    try {
+      await api.post(`/coach/students/${studentId}/body-form-request`);
+      setRequestSent(true);
+      showToast("Form analizi bildirimi gönderildi", "success");
+      setTimeout(() => setRequestSent(false), 5000);
+    } catch (e) {
+      showToast("Bildirim gönderilemedi", "error");
+    } finally { setRequesting(false); }
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border bg-white p-5 shadow-sm">
+        <div className="mb-4 text-sm font-semibold text-gray-900">Form Fotoğrafları</div>
+        <div className="text-sm text-gray-400">Yükleniyor...</div>
+      </div>
+    );
+  }
+
+  const photoMap = {};
+  for (const p of photos) { photoMap[p.angle] = p; }
+  const hasAny = photos.length > 0;
+
+  return (
+    <div className="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-semibold text-gray-900">Form Fotoğrafları</div>
+        <div className="flex items-center gap-2">
+          {hasAny && (
+            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+              {photos.length}/4
+            </span>
+          )}
+          {hasAny && (
+            <button
+              type="button"
+              onClick={() => { setShowHistory((v) => !v); if (!showHistory) fetchHistory(); }}
+              className="rounded-lg border px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
+            >
+              {showHistory ? "Gizle" : "Geçmiş"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Controls: frequency + request button */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">Sıklık:</span>
+          <select value={frequency} onChange={(e) => saveFrequency(parseInt(e.target.value))} disabled={savingFreq} className="rounded-lg border px-2 py-1 text-xs">
+            <option value={7}>Haftalık</option>
+            <option value={14}>2 Haftalık</option>
+            <option value={30}>Aylık</option>
+            <option value={60}>2 Aylık</option>
+            <option value={90}>3 Aylık</option>
+          </select>
+        </div>
+        <button type="button" onClick={requestFormPhotos} disabled={requesting || requestSent}
+          className="rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-black/90 disabled:opacity-50">
+          {requestSent ? "Bildirim Gönderildi" : requesting ? "Gönderiliyor..." : "Form Analizi İste"}
+        </button>
+        {hasAny && (
+          <button type="button" onClick={() => { setShowHistory((v) => !v); if (!showHistory) fetchHistory(); }}
+            className="rounded-lg border px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+            {showHistory ? "Geçmişi Gizle" : "Geçmişi Göster"}
+          </button>
+        )}
+      </div>
+
+      {/* Current photos — compact list */}
+      {!hasAny ? (
+        <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-200 text-gray-400">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z" />
+            </svg>
+          </div>
+          <div>
+            <div className="text-sm font-medium text-gray-600">Henüz form fotoğrafı yüklenmemiş</div>
+            <div className="text-xs text-gray-400">"Form Analizi İste" butonuyla öğrenciye bildirim gönderin.</div>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border divide-y">
+          {ANGLE_ORDER.map((angle) => {
+            const photo = photoMap[angle];
+            const label = ANGLE_LABELS[angle];
+            return (
+              <button key={angle} type="button"
+                onClick={() => photo && onPhotoClick(photo.photo_url, label)}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-gray-50">
+                {photo ? (
+                  <img src={photo.photo_url} alt={label} loading="lazy" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50">
+                    <span className="text-[10px] text-gray-300">Yok</span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-semibold text-gray-800">{label}</div>
+                  <div className="text-[10px] text-gray-400">{photo ? "Yüklendi" : "Bekleniyor"}</div>
+                </div>
+                {photo && compareIdx !== null && history[compareIdx]?.photos[angle] && (
+                  <span className="text-[10px] text-blue-500 font-medium">Karşılaştır →</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Angle comparison modal */}
+      {compareAngle && compareIdx !== null && history[compareIdx] && (
+        <div className="rounded-xl border bg-gray-50 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs font-semibold text-gray-700">
+              {ANGLE_LABELS[compareAngle]} — Karşılaştırma
+            </div>
+            <button type="button" onClick={() => setCompareAngle(null)} className="text-xs text-red-400 hover:text-red-600">Kapat</button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-[10px] text-gray-500 mb-1">Güncel</div>
+              {photoMap[compareAngle] ? (
+                <img src={photoMap[compareAngle].photo_url} className="w-full rounded-lg object-cover aspect-[3/4]" alt="Güncel" />
+              ) : <div className="aspect-[3/4] rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-400">Yok</div>}
+            </div>
+            <div>
+              <div className="text-[10px] text-gray-500 mb-1">{history[compareIdx].date}</div>
+              {history[compareIdx].photos[compareAngle] ? (
+                <img src={history[compareIdx].photos[compareAngle].photo_url} className="w-full rounded-lg object-cover aspect-[3/4]" alt="Eski" />
+              ) : <div className="aspect-[3/4] rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-400">Yok</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History timeline */}
+      {showHistory && (
+        <div className="border-t pt-4">
+          <div className="text-xs font-semibold text-gray-600 mb-3">Geçmiş Form Kayıtları</div>
+          {historyLoading ? (
+            <div className="text-xs text-gray-400">Yükleniyor...</div>
+          ) : history.length === 0 ? (
+            <div className="text-xs text-gray-400">Geçmiş kayıt yok.</div>
+          ) : (
+            <div className="space-y-2">
+              {history.map((batch, idx) => (
+                <div key={batch.date} className="rounded-lg border">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <div>
+                      <div className="text-xs font-medium text-gray-800">{batch.date}</div>
+                      <div className="text-[10px] text-gray-400">{batch.angle_count}/4 açı</div>
+                    </div>
+                    <button type="button"
+                      onClick={() => { setCompareIdx(compareIdx === idx ? null : idx); setCompareAngle(null); }}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium border transition ${
+                        compareIdx === idx ? "bg-black text-white border-black" : "text-gray-600 border-gray-200 hover:bg-gray-50"
+                      }`}>
+                      {compareIdx === idx ? "Seçili" : "Karşılaştır"}
+                    </button>
+                  </div>
+                  {/* When selected, show angle picker */}
+                  {compareIdx === idx && (
+                    <div className="border-t px-3 py-2 flex gap-2">
+                      {ANGLE_ORDER.map((angle) => {
+                        const hasOld = !!batch.photos[angle];
+                        const hasCurrent = !!photoMap[angle];
+                        return (
+                          <button key={angle} type="button" disabled={!hasOld || !hasCurrent}
+                            onClick={() => setCompareAngle(angle)}
+                            className={`rounded-lg px-2 py-1 text-[10px] font-medium border transition ${
+                              compareAngle === angle ? "bg-blue-500 text-white border-blue-500" :
+                              hasOld && hasCurrent ? "text-gray-600 border-gray-200 hover:bg-gray-50" :
+                              "text-gray-300 border-gray-100 cursor-not-allowed"
+                            }`}>
+                            {ANGLE_LABELS[angle]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <FormToast />
+    </div>
+  );
+}
+
+/* ─── Meal Photos Tab ─── */
+const MEAL_DAY_MAP = { mon: "Pazartesi", tue: "Salı", wed: "Çarşamba", thu: "Perşembe", fri: "Cuma", sat: "Cumartesi", sun: "Pazar" };
+
+function cleanMealLabel(label) {
+  if (!label) return "Öğün";
+  // Strip day prefix: "mon:Kahvalti" → "Kahvaltı"
+  const clean = label.includes(":") ? label.split(":").slice(1).join(":") : label;
+  return clean.trim() || "Öğün";
+}
+
+function MealPhotosTab({ studentId }) {
+  const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalUrl, setModalUrl] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null); // null = all dates
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    api
+      .get(`/coach/students/${studentId}/meal-photos?limit=200`)
+      .then((res) => {
+        if (alive) setPhotos(res.data?.photos || []);
+      })
+      .catch(() => {
+        if (alive) setPhotos([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => { alive = false; };
+  }, [studentId]);
+
+  const fmtDate = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+  };
+
+  const fmtDateShort = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+  };
+
+  const fmtTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Get unique dates for calendar strip
+  const dateKeys = useMemo(() => {
+    const set = new Set();
+    for (const p of photos) {
+      if (p.created_at) set.add(p.created_at.split("T")[0]);
+    }
+    return [...set].sort((a, b) => b.localeCompare(a));
+  }, [photos]);
+
+  // Group photos by date, filtered by selectedDate
+  const grouped = useMemo(() => {
+    const filtered = selectedDate
+      ? photos.filter((p) => p.created_at?.startsWith(selectedDate))
+      : photos;
+    const map = {};
+    for (const p of filtered) {
+      const dateKey = p.created_at ? p.created_at.split("T")[0] : "unknown";
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push(p);
+    }
+    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [photos, selectedDate]);
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border bg-white p-8 text-center text-sm text-gray-500">
+        Öğün fotoğrafları yükleniyor...
+      </div>
+    );
+  }
+
+  if (photos.length === 0) {
+    return (
+      <div className="rounded-2xl border bg-white p-8">
+        <div className="flex flex-col items-center gap-3 py-6">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z" />
+            </svg>
+          </div>
+          <div className="text-sm font-medium text-gray-600">
+            Henüz öğün fotoğrafı yüklenmemiş
+          </div>
+          <div className="text-xs text-gray-400">
+            Öğrenci öğün fotoğraflarını yüklediğinde burada tarih sırasına göre görünecek.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        {/* Date filter strip */}
+        {dateKeys.length > 1 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <button
+              type="button"
+              onClick={() => setSelectedDate(null)}
+              className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium border transition ${
+                !selectedDate ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              Tümü ({photos.length})
+            </button>
+            {dateKeys.map((dk) => {
+              const count = photos.filter((p) => p.created_at?.startsWith(dk)).length;
+              return (
+                <button
+                  key={dk}
+                  type="button"
+                  onClick={() => setSelectedDate(dk === selectedDate ? null : dk)}
+                  className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium border transition ${
+                    selectedDate === dk ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  {fmtDateShort(dk + "T00:00")} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {grouped.map(([dateKey, dayPhotos]) => (
+          <div key={dateKey} className="rounded-2xl border bg-white shadow-sm">
+            {/* Date header */}
+            <div className="border-b px-4 py-2.5 flex items-center justify-between">
+              <div className="text-sm font-semibold text-gray-900">
+                {fmtDate(dayPhotos[0]?.created_at)}
+              </div>
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                {dayPhotos.length} fotoğraf
+              </span>
+            </div>
+
+            {/* Compact list */}
+            <div className="divide-y">
+              {dayPhotos.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setModalUrl({ url: p.photo_url, label: cleanMealLabel(p.meal_label), time: fmtTime(p.created_at), retake: p.is_retake })}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-gray-50"
+                >
+                  {/* Tiny thumbnail */}
+                  <img
+                    src={p.photo_url}
+                    alt=""
+                    loading="lazy"
+                    className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                  />
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-gray-800 truncate">
+                        {cleanMealLabel(p.meal_label)}
+                      </span>
+                      {p.is_retake && (
+                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+                          Güncellendi
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-gray-400">{fmtTime(p.created_at)}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Full-size photo modal */}
+      {modalUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setModalUrl(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-[90vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={modalUrl.url}
+              alt={modalUrl.label}
+              className="max-h-[80vh] rounded-2xl object-contain"
+            />
+            <div className="mt-3 text-center">
+              <div className="text-sm font-medium text-white">{modalUrl.label}</div>
+              <div className="text-xs text-white/60">{modalUrl.time}</div>
+              {modalUrl.retake && (
+                <span className="mt-1 inline-block rounded bg-amber-500/20 px-2 py-0.5 text-xs text-amber-300">
+                  Güncellendi
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setModalUrl(null)}
+              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-800 shadow-lg hover:bg-gray-100"
+              type="button"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -332,6 +332,14 @@ export default function ProgramsTab() {
   const [nutritionGenerateError, setNutritionGenerateError] = useState(null);
   const [nutritionGenerateSuccess, setNutritionGenerateSuccess] = useState(false);
   const [showMacroInputs, setShowMacroInputs] = useState(false);
+  const [showNutritionForm, setShowNutritionForm] = useState(false);
+  const [nutritionFormData, setNutritionFormData] = useState({
+    meal_count: "5",
+    diet_type: "standard",
+    training_days: [],
+    include_supplements: true,
+    notes: "",
+  });
   const [targetMacros, setTargetMacros] = useState({ calories: '', protein: '', carbs: '', fat: '' });
   const [latestNutritionProgram, setLatestNutritionProgram] = useState(null);
   const [activeNutritionProgramId, setActiveNutritionProgramId] = useState(null);
@@ -544,8 +552,13 @@ export default function ProgramsTab() {
     setNutritionGenerateSuccess(false);
 
     try {
-      // Send empty payload — backend auto-calculates from onboarding data
-      const res = await api.post(`/coach/students/${studentId}/nutrition-programs/generate`, {});
+      const res = await api.post(`/coach/students/${studentId}/nutrition-programs/generate`, {
+        meal_count: parseInt(nutritionFormData.meal_count) || 5,
+        diet_type: nutritionFormData.diet_type,
+        training_days: nutritionFormData.training_days,
+        include_supplements: nutritionFormData.include_supplements,
+        coach_notes: nutritionFormData.notes,
+      });
 
       if (res.data?.week) {
         setNutritionWeek(res.data.week);
@@ -774,7 +787,7 @@ export default function ProgramsTab() {
               : "Aktif beslenme programı yok"
           }
           onEdit={() => setOpen("nutrition")}
-          onGenerate={generateNutritionWithAI}
+          onGenerate={() => setShowNutritionForm((v) => !v)}
           generating={nutritionGenerating}
           isAIGenerated={!isLatestNutritionActive && nutritionSource === "ai"}
           onRemove={latestNutritionProgram?.program_id ? removeNutritionProgram : undefined}
@@ -799,7 +812,92 @@ export default function ProgramsTab() {
               )}
             </div>
           )}
-          {/* Makro input kaldırıldı — AI öğrenci onboarding verisinden otomatik hesaplar */}
+          {/* AI Beslenme Ayarları Formu */}
+          {showNutritionForm && (
+            <div className="mb-4 rounded-xl border bg-gray-50 p-4 space-y-3">
+              <div className="text-sm font-semibold text-gray-800">Beslenme Programı Ayarları</div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Öğün Sayısı</label>
+                  <select
+                    value={nutritionFormData.meal_count}
+                    onChange={(e) => setNutritionFormData((d) => ({ ...d, meal_count: e.target.value }))}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  >
+                    <option value="3">3 Öğün</option>
+                    <option value="4">4 Öğün</option>
+                    <option value="5">5 Öğün</option>
+                    <option value="6">6 Öğün</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Diyet Tipi</label>
+                  <select
+                    value={nutritionFormData.diet_type}
+                    onChange={(e) => setNutritionFormData((d) => ({ ...d, diet_type: e.target.value }))}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  >
+                    <option value="standard">Standart</option>
+                    <option value="high_protein">Yüksek Protein</option>
+                    <option value="low_carb">Düşük Karbonhidrat</option>
+                    <option value="keto">Keto</option>
+                    <option value="vegetarian">Vejetaryen</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Antrenman Günleri (öğün zamanlaması için)</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[["mon","Pzt"],["tue","Sal"],["wed","Çar"],["thu","Per"],["fri","Cum"],["sat","Cmt"],["sun","Paz"]].map(([k,l]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setNutritionFormData((d) => ({
+                        ...d,
+                        training_days: d.training_days.includes(k) ? d.training_days.filter((x) => x !== k) : [...d.training_days, k],
+                      }))}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium border transition ${
+                        nutritionFormData.training_days.includes(k) ? "bg-black text-white border-black" : "bg-white text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={nutritionFormData.include_supplements}
+                  onChange={(e) => setNutritionFormData((d) => ({ ...d, include_supplements: e.target.checked }))}
+                  className="rounded"
+                />
+                Supplement önerileri ekle
+              </label>
+
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Koç Notu (opsiyonel)</label>
+                <textarea
+                  value={nutritionFormData.notes}
+                  onChange={(e) => setNutritionFormData((d) => ({ ...d, notes: e.target.value }))}
+                  placeholder="Örn: Glutensiz olsun, süt ürünü az kullan..."
+                  rows={2}
+                  className="w-full rounded-lg border px-3 py-2 text-sm resize-none"
+                />
+              </div>
+
+              <button
+                onClick={() => { generateNutritionWithAI(); setShowNutritionForm(false); }}
+                disabled={nutritionGenerating}
+                className="w-full rounded-xl bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-black/90 disabled:opacity-50"
+              >
+                {nutritionGenerating ? "Oluşturuluyor..." : "AI ile Beslenme Programı Oluştur"}
+              </button>
+            </div>
+          )}
           <div className="mb-3 flex flex-wrap gap-2">
             {DAY_LABELS.map(([k, label]) => (
               <button

@@ -949,6 +949,36 @@ export default function ProgramsTab() {
         </div>
       )}
 
+      {/* ── Yeni Taslak Butonları (her zaman görünür) ── */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <button
+          onClick={() => {
+            if (workoutDrafts.length >= 3) {
+              showToast("En fazla 3 antrenman taslağı olabilir. Yeni oluşturmak için birini silin.", "error");
+              return;
+            }
+            setOpen("workout");
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-dashed border-[#3E9E8E]/40 text-[#2B7B6E] hover:bg-[#3E9E8E]/5 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2V14M2 8H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Yeni Antrenman Taslağı
+        </button>
+        <button
+          onClick={() => {
+            if (nutritionDrafts.length >= 3) {
+              showToast("En fazla 3 beslenme taslağı olabilir. Yeni oluşturmak için birini silin.", "error");
+              return;
+            }
+            setOpen("nutrition");
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-dashed border-[#3E9E8E]/40 text-[#2B7B6E] hover:bg-[#3E9E8E]/5 transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2V14M2 8H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          Yeni Beslenme Taslağı
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <ProgramCard
           title="Antrenman Programı"

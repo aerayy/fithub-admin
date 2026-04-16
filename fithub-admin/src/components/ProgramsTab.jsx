@@ -833,152 +833,6 @@ export default function ProgramsTab() {
         </div>
       )}
 
-      {/* ── Draft Tabs: Antrenman ── */}
-      {workoutDrafts.length > 0 && (
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#3E9E8E] to-[#2B7B6E]" />
-            <h3 className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#0F172B]">Antrenman Taslakları</h3>
-            <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#3E9E8E]/10 text-[#2B7B6E] text-[10px] font-black">{workoutDrafts.length}</span>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {workoutDrafts.map((d, idx) => (
-              <button
-                key={d.id}
-                onClick={() => setSelectedWorkoutDraftIdx(idx)}
-                className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-                  selectedWorkoutDraftIdx === idx
-                    ? "bg-[#3E9E8E]/10 border-[#3E9E8E]/30 text-[#2B7B6E]"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                }`}
-              >
-                <span>{d.name || `Taslak ${idx + 1}`}</span>
-                <span className="text-[10px] text-slate-400">{new Date(d.created_at).toLocaleDateString('tr-TR')}</span>
-                {/* Delete mini button */}
-                <span
-                  onClick={(e) => { e.stopPropagation(); deleteWorkoutDraft(d.id); }}
-                  className="ml-1 w-5 h-5 rounded-md flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                  title="Taslağı sil"
-                >
-                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                </span>
-              </button>
-            ))}
-            {/* Assign selected draft */}
-            {workoutDrafts.length > 0 && (
-              <button
-                onClick={() => selectedWorkoutDraft && assignWorkoutDraft(selectedWorkoutDraft.id)}
-                disabled={!selectedWorkoutDraft}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white hover:shadow-lg hover:shadow-[#3E9E8E]/25 disabled:opacity-50 transition-all"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Seçili Taslağı Ata
-              </button>
-            )}
-          </div>
-          {/* Selected draft preview */}
-          {selectedWorkoutDraft && (
-            <div className="mt-3 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                {selectedWorkoutDraft.name || 'Taslak'} — Önizleme
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {workoutSummaryCardsStructured(
-                  normalizeWeekForEditor(selectedWorkoutDraft.payload)
-                ).map((d) => (
-                  <MiniList key={d.key} title={d.title} lines={d.lines} />
-                ))}
-              </div>
-              {workoutSummaryCardsStructured(normalizeWeekForEditor(selectedWorkoutDraft.payload)).length === 0 && (
-                <div className="text-sm text-slate-400">Taslak boş — düzenlemek için Antrenman Programı kartındaki Düzenle butonunu kullanın</div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Draft Tabs: Beslenme ── */}
-      {nutritionDrafts.length > 0 && (
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#3E9E8E] to-[#2B7B6E]" />
-            <h3 className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#0F172B]">Beslenme Taslakları</h3>
-            <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#3E9E8E]/10 text-[#2B7B6E] text-[10px] font-black">{nutritionDrafts.length}</span>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {nutritionDrafts.map((d, idx) => (
-              <button
-                key={d.id}
-                onClick={() => setSelectedNutritionDraftIdx(idx)}
-                className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-                  selectedNutritionDraftIdx === idx
-                    ? "bg-[#3E9E8E]/10 border-[#3E9E8E]/30 text-[#2B7B6E]"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                }`}
-              >
-                <span>{d.name || `Taslak ${idx + 1}`}</span>
-                <span className="text-[10px] text-slate-400">{new Date(d.created_at).toLocaleDateString('tr-TR')}</span>
-                <span
-                  onClick={(e) => { e.stopPropagation(); deleteNutritionDraft(d.id); }}
-                  className="ml-1 w-5 h-5 rounded-md flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                  title="Taslağı sil"
-                >
-                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                </span>
-              </button>
-            ))}
-            {nutritionDrafts.length > 0 && (
-              <button
-                onClick={() => selectedNutritionDraft && assignNutritionDraft(selectedNutritionDraft.id)}
-                disabled={!selectedNutritionDraft}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white hover:shadow-lg hover:shadow-[#3E9E8E]/25 disabled:opacity-50 transition-all"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Seçili Taslağı Ata
-              </button>
-            )}
-          </div>
-          {selectedNutritionDraft && (
-            <div className="mt-3 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                {selectedNutritionDraft.name || 'Taslak'} — Önizleme
-              </div>
-              <div className="text-sm text-slate-500">Beslenme taslağı mevcut — atamak için yukarıdaki butona basın</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Yeni Taslak Butonları (her zaman görünür) ── */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        <button
-          onClick={() => {
-            if (workoutDrafts.length >= 3) {
-              showToast("En fazla 3 antrenman taslağı olabilir. Yeni oluşturmak için birini silin.", "error");
-              return;
-            }
-            setOpen("workout");
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-dashed border-[#3E9E8E]/40 text-[#2B7B6E] hover:bg-[#3E9E8E]/5 transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2V14M2 8H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          Yeni Antrenman Taslağı
-        </button>
-        <button
-          onClick={() => {
-            if (nutritionDrafts.length >= 3) {
-              showToast("En fazla 3 beslenme taslağı olabilir. Yeni oluşturmak için birini silin.", "error");
-              return;
-            }
-            setOpen("nutrition");
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-dashed border-[#3E9E8E]/40 text-[#2B7B6E] hover:bg-[#3E9E8E]/5 transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2V14M2 8H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          Yeni Beslenme Taslağı
-        </button>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <ProgramCard
           title="Antrenman Programı"
@@ -994,6 +848,18 @@ export default function ProgramsTab() {
           generating={generating}
           isAIGenerated={!isLatestProgramActive && workoutSource === "ai"}
           onRemove={latestWorkoutProgram?.program_id ? removeWorkoutProgram : undefined}
+          drafts={workoutDrafts}
+          selectedDraftIdx={selectedWorkoutDraftIdx}
+          onDraftSelect={setSelectedWorkoutDraftIdx}
+          onNewDraft={() => {
+            if (workoutDrafts.length >= 3) {
+              showToast("En fazla 3 taslak. Yeni oluşturmak için birini silin.", "error");
+              return;
+            }
+            setOpen("workout");
+          }}
+          onDeleteDraft={deleteWorkoutDraft}
+          onAssignDraft={(id) => assignWorkoutDraft(id)}
         >
           {isLatestProgramActive && (
             <div className="mb-2">
@@ -1045,6 +911,18 @@ export default function ProgramsTab() {
           generating={nutritionGenerating}
           isAIGenerated={!isLatestNutritionActive && nutritionSource === "ai"}
           onRemove={latestNutritionProgram?.program_id ? removeNutritionProgram : undefined}
+          drafts={nutritionDrafts}
+          selectedDraftIdx={selectedNutritionDraftIdx}
+          onDraftSelect={setSelectedNutritionDraftIdx}
+          onNewDraft={() => {
+            if (nutritionDrafts.length >= 3) {
+              showToast("En fazla 3 taslak. Yeni oluşturmak için birini silin.", "error");
+              return;
+            }
+            setOpen("nutrition");
+          }}
+          onDeleteDraft={deleteNutritionDraft}
+          onAssignDraft={(id) => assignNutritionDraft(id)}
         >
           {isLatestNutritionActive && (
             <div className="mb-2">

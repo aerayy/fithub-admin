@@ -147,7 +147,7 @@ function normalizeInitialWeek(init) {
   return week;
 }
 
-export default function NutritionEditor({ initialWeek, initialSupplements, onCancel, onSave }) {
+export default function NutritionEditor({ initialWeek, initialSupplements, onCancel, onSave, onDraftSave }) {
   const [day, setDay] = useState("mon");
   const [week, setWeek] = useState(() => normalizeInitialWeek(initialWeek));
   const [supplements, setSupplements] = useState(initialSupplements || []);
@@ -619,6 +619,14 @@ export default function NutritionEditor({ initialWeek, initialSupplements, onCan
         >
           İptal
         </button>
+        {onDraftSave && (
+          <button
+            onClick={() => onDraftSave(week, supplements)}
+            className="rounded-xl border border-[#3E9E8E] px-4 py-2 text-sm font-semibold text-[#3E9E8E] hover:bg-[#3E9E8E]/5"
+          >
+            Taslak Olarak Kaydet
+          </button>
+        )}
         <button
           onClick={() => onSave(week, supplements)}
           className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"

@@ -355,6 +355,109 @@ export default function ProgramsTab() {
   const [latestCardioProgram, setLatestCardioProgram] = useState(null);
   const [showCardioEditor, setShowCardioEditor] = useState(false);
 
+  // ── Draft system state ──
+  const [workoutDrafts, setWorkoutDrafts] = useState([]);
+  const [selectedWorkoutDraftIdx, setSelectedWorkoutDraftIdx] = useState(0);
+  const [nutritionDrafts, setNutritionDrafts] = useState([]);
+  const [selectedNutritionDraftIdx, setSelectedNutritionDraftIdx] = useState(0);
+  const [draftSaving, setDraftSaving] = useState(false);
+
+  const fetchWorkoutDrafts = async () => {
+    if (!studentId) return;
+    try {
+      const res = await api.get(`/coach/students/${studentId}/workout-drafts`);
+      setWorkoutDrafts(res.data?.drafts ?? []);
+    } catch (_) {}
+  };
+
+  const fetchNutritionDrafts = async () => {
+    if (!studentId) return;
+    try {
+      const res = await api.get(`/coach/students/${studentId}/nutrition-drafts`);
+      setNutritionDrafts(res.data?.drafts ?? []);
+    } catch (_) {}
+  };
+
+  const saveWorkoutDraft = async (name, payload) => {
+    if (!studentId) return;
+    setDraftSaving(true);
+    try {
+      await api.post(`/coach/students/${studentId}/workout-drafts`, { name, payload });
+      showToast("Antrenman taslağı kaydedildi", "success");
+      await fetchWorkoutDrafts();
+      setSelectedWorkoutDraftIdx(0);
+    } catch (e) {
+      showToast("Taslak kaydedilemedi", "error");
+    } finally {
+      setDraftSaving(false);
+    }
+  };
+
+  const saveNutritionDraft = async (name, payload) => {
+    if (!studentId) return;
+    setDraftSaving(true);
+    try {
+      await api.post(`/coach/students/${studentId}/nutrition-drafts`, { name, payload });
+      showToast("Beslenme taslağı kaydedildi", "success");
+      await fetchNutritionDrafts();
+      setSelectedNutritionDraftIdx(0);
+    } catch (e) {
+      showToast("Taslak kaydedilemedi", "error");
+    } finally {
+      setDraftSaving(false);
+    }
+  };
+
+  const deleteWorkoutDraft = async (draftId) => {
+    try {
+      await api.delete(`/coach/students/${studentId}/workout-drafts/${draftId}`);
+      showToast("Taslak silindi", "success");
+      await fetchWorkoutDrafts();
+      setSelectedWorkoutDraftIdx(0);
+    } catch (_) {
+      showToast("Taslak silinemedi", "error");
+    }
+  };
+
+  const deleteNutritionDraft = async (draftId) => {
+    try {
+      await api.delete(`/coach/students/${studentId}/nutrition-drafts/${draftId}`);
+      showToast("Taslak silindi", "success");
+      await fetchNutritionDrafts();
+      setSelectedNutritionDraftIdx(0);
+    } catch (_) {
+      showToast("Taslak silinemedi", "error");
+    }
+  };
+
+  const assignWorkoutDraft = async (draftId) => {
+    try {
+      await api.post(`/coach/students/${studentId}/workout-drafts/${draftId}/assign`);
+      showToast("Antrenman programı atandı!", "success");
+      await fetchActive();
+      await fetchLatestWorkout();
+      await fetchWorkoutDrafts();
+    } catch (e) {
+      showToast("Program atanamadı", "error");
+    }
+  };
+
+  const assignNutritionDraft = async (draftId) => {
+    try {
+      await api.post(`/coach/students/${studentId}/nutrition-drafts/${draftId}/assign`);
+      showToast("Beslenme programı atandı!", "success");
+      await fetchActive();
+      await fetchLatestNutrition();
+      await fetchNutritionDrafts();
+    } catch (e) {
+      showToast("Program atanamadı", "error");
+    }
+  };
+
+  // Expose selected draft IDs for parent "Program Ata" button
+  const selectedWorkoutDraft = workoutDrafts[selectedWorkoutDraftIdx] ?? null;
+  const selectedNutritionDraft = nutritionDrafts[selectedNutritionDraftIdx] ?? null;
+
   const fetchActive = async () => {
     if (!studentId) return;
     setLoading(true);
@@ -453,6 +556,8 @@ export default function ProgramsTab() {
     fetchLatestWorkout();
     fetchLatestNutrition();
     fetchLatestCardio();
+    fetchWorkoutDrafts();
+    fetchNutritionDrafts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
@@ -720,8 +825,127 @@ export default function ProgramsTab() {
         </div>
       )}
       {nutritionGenerateSuccess && (
-        <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          ✅ AI beslenme programı oluşturuldu!
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          AI beslenme programı oluşturuldu
+        </div>
+      )}
+
+      {/* ── Draft Tabs: Antrenman ── */}
+      {workoutDrafts.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#3E9E8E] to-[#2B7B6E]" />
+            <h3 className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#0F172B]">Antrenman Taslakları</h3>
+            <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#3E9E8E]/10 text-[#2B7B6E] text-[10px] font-black">{workoutDrafts.length}</span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {workoutDrafts.map((d, idx) => (
+              <button
+                key={d.id}
+                onClick={() => setSelectedWorkoutDraftIdx(idx)}
+                className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  selectedWorkoutDraftIdx === idx
+                    ? "bg-[#3E9E8E]/10 border-[#3E9E8E]/30 text-[#2B7B6E]"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <span>{d.name || `Taslak ${idx + 1}`}</span>
+                <span className="text-[10px] text-slate-400">{new Date(d.created_at).toLocaleDateString('tr-TR')}</span>
+                {/* Delete mini button */}
+                <span
+                  onClick={(e) => { e.stopPropagation(); deleteWorkoutDraft(d.id); }}
+                  className="ml-1 w-5 h-5 rounded-md flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                  title="Taslağı sil"
+                >
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </span>
+              </button>
+            ))}
+            {/* Assign selected draft */}
+            {workoutDrafts.length > 0 && (
+              <button
+                onClick={() => selectedWorkoutDraft && assignWorkoutDraft(selectedWorkoutDraft.id)}
+                disabled={!selectedWorkoutDraft}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white hover:shadow-lg hover:shadow-[#3E9E8E]/25 disabled:opacity-50 transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Seçili Taslağı Ata
+              </button>
+            )}
+          </div>
+          {/* Selected draft preview */}
+          {selectedWorkoutDraft && (
+            <div className="mt-3 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                {selectedWorkoutDraft.name || 'Taslak'} — Önizleme
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {workoutSummaryCardsStructured(
+                  normalizeWeekForEditor(selectedWorkoutDraft.payload)
+                ).map((d) => (
+                  <MiniList key={d.key} title={d.title} lines={d.lines} />
+                ))}
+              </div>
+              {workoutSummaryCardsStructured(normalizeWeekForEditor(selectedWorkoutDraft.payload)).length === 0 && (
+                <div className="text-sm text-slate-400">Taslak boş — düzenlemek için Antrenman Programı kartındaki Düzenle butonunu kullanın</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Draft Tabs: Beslenme ── */}
+      {nutritionDrafts.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#3E9E8E] to-[#2B7B6E]" />
+            <h3 className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#0F172B]">Beslenme Taslakları</h3>
+            <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#3E9E8E]/10 text-[#2B7B6E] text-[10px] font-black">{nutritionDrafts.length}</span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {nutritionDrafts.map((d, idx) => (
+              <button
+                key={d.id}
+                onClick={() => setSelectedNutritionDraftIdx(idx)}
+                className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  selectedNutritionDraftIdx === idx
+                    ? "bg-[#3E9E8E]/10 border-[#3E9E8E]/30 text-[#2B7B6E]"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <span>{d.name || `Taslak ${idx + 1}`}</span>
+                <span className="text-[10px] text-slate-400">{new Date(d.created_at).toLocaleDateString('tr-TR')}</span>
+                <span
+                  onClick={(e) => { e.stopPropagation(); deleteNutritionDraft(d.id); }}
+                  className="ml-1 w-5 h-5 rounded-md flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                  title="Taslağı sil"
+                >
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </span>
+              </button>
+            ))}
+            {nutritionDrafts.length > 0 && (
+              <button
+                onClick={() => selectedNutritionDraft && assignNutritionDraft(selectedNutritionDraft.id)}
+                disabled={!selectedNutritionDraft}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white hover:shadow-lg hover:shadow-[#3E9E8E]/25 disabled:opacity-50 transition-all"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Seçili Taslağı Ata
+              </button>
+            )}
+          </div>
+          {selectedNutritionDraft && (
+            <div className="mt-3 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                {selectedNutritionDraft.name || 'Taslak'} — Önizleme
+              </div>
+              <div className="text-sm text-slate-500">Beslenme taslağı mevcut — atamak için yukarıdaki butona basın</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -933,8 +1157,8 @@ export default function ProgramsTab() {
         <ProgramCard
           title="Kardiyo Programı"
           subtitle={
-            cardioSource === 'active' ? '✅ Aktif' :
-            cardioSource === 'latest' ? '📝 Taslak' : null
+            cardioSource === 'active' ? 'Aktif' :
+            cardioSource === 'latest' ? 'Taslak' : null
           }
           onEdit={() => setShowCardioEditor(true)}
           onRemove={latestCardioProgram?.program_id ? removeCardioProgram : undefined}
@@ -974,29 +1198,24 @@ export default function ProgramsTab() {
           onCancel={() => setOpen(null)}
           onSave={async (week) => {
             try {
-              // ✅ Save to backend
               await saveWorkoutToBackend(week);
-
-              // ✅ Immediately update latest workout program (card displays this)
-              // Keep existing program_id and source if available
               setLatestWorkoutProgram((prev) => ({
                 program_id: prev?.program_id || null,
                 week: week,
                 generated_by: prev?.generated_by || null,
               }));
-
               setOpen(null);
-
-              // ✅ Refresh from DB (fetch latest and active)
               await Promise.all([fetchLatestWorkout(), fetchActive()]);
             } catch (e) {
-              const msg =
-                e?.response?.data?.detail ||
-                e?.message ||
-                "Antrenman programı kaydedilemedi";
+              const msg = e?.response?.data?.detail || e?.message || "Antrenman programı kaydedilemedi";
               showToast(msg, "error");
-              console.error("Workout save failed:", e);
             }
+          }}
+          onDraftSave={async (week) => {
+            const name = prompt("Taslak adı:", `Taslak ${workoutDrafts.length + 1}`);
+            if (name === null) return;
+            await saveWorkoutDraft(name || `Taslak ${workoutDrafts.length + 1}`, week);
+            setOpen(null);
           }}
         />
       </Modal>
@@ -1013,17 +1232,18 @@ export default function ProgramsTab() {
           onSave={async (week, supplements) => {
             try {
               await api.post(`/coach/students/${studentId}/nutrition-programs`, { week, supplements });
-
               setOpen(null);
               await Promise.all([fetchActive(), fetchLatestNutrition()]);
             } catch (e) {
-              const msg =
-                e?.response?.data?.detail ||
-                e?.message ||
-                "Beslenme programı kaydedilemedi";
+              const msg = e?.response?.data?.detail || e?.message || "Beslenme programı kaydedilemedi";
               showToast(msg, "error");
-              console.error("Nutrition save failed:", e);
             }
+          }}
+          onDraftSave={async (week, supplements) => {
+            const name = prompt("Taslak adı:", `Taslak ${nutritionDrafts.length + 1}`);
+            if (name === null) return;
+            await saveNutritionDraft(name || `Taslak ${nutritionDrafts.length + 1}`, { week, supplements });
+            setOpen(null);
           }}
         />
       </Modal>

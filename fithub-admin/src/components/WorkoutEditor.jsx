@@ -147,7 +147,7 @@ function SectionTitle({ icon, title, right }) {
   );
 }
 
-export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave }) {
+export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave, onDraftSave }) {
   const [day, setDay] = useState("mon");
   const [week, setWeek] = useState(() => normalizeInitialWeek(initialWeek));
 
@@ -601,6 +601,15 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
         >
           İptal
         </button>
+        {onDraftSave && (
+          <button
+            onClick={() => onDraftSave(week)}
+            className="rounded-xl border border-[#3E9E8E] px-4 py-2 text-sm font-semibold text-[#3E9E8E] hover:bg-[#3E9E8E]/5"
+            type="button"
+          >
+            Taslak Olarak Kaydet
+          </button>
+        )}
         <button
           onClick={() => onSave(week)}
           className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"

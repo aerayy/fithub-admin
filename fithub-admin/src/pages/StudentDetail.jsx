@@ -138,18 +138,9 @@ const tr = (v) => {
 /** Dizi elemanlarını Türkçe'ye çevir */
 const trArr = (arr) => (Array.isArray(arr) ? arr.map(tr) : arr);
 
-const SECTION_ICONS = {
-  "Kişisel Bilgiler": "👤",
-  "Hedef ve Deneyim": "🎯",
-  "Antrenman Tercihleri": "💪",
-  "Sağlık ve Beslenme": "🩺",
-  "Günlük Düzen": "⏰",
-};
-
 const Section = ({ title, children, cols = 2 }) => (
   <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
-    <div className="border-b bg-gray-50/50 px-5 py-3 flex items-center gap-2">
-      <span className="text-base">{SECTION_ICONS[title] || "📋"}</span>
+    <div className="border-b bg-gray-50/50 px-5 py-3">
       <span className="text-sm font-bold text-gray-800">{title}</span>
     </div>
     <div className={`grid grid-cols-1 gap-x-6 gap-y-4 p-5 ${cols === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>{children}</div>
@@ -580,7 +571,6 @@ export default function StudentDetail() {
         <div className="lg:col-span-1">
           <div className="rounded-2xl border bg-white shadow-sm sticky top-4">
             <div className="border-b bg-gray-50/50 px-5 py-3 flex items-center gap-2">
-              <span className="text-base">🔔</span>
               <span className="text-sm font-bold text-gray-800">Aktivite Bildirimleri</span>
               {activities.length > 0 && (
                 <span className="ml-auto rounded-full bg-black px-2 py-0.5 text-[10px] font-bold text-white">{activities.length}</span>
@@ -597,10 +587,53 @@ export default function StudentDetail() {
               ) : (
                 activities.map((a) => {
                   const icons = {
-                    meal_photo: { icon: "🍽️", bg: "bg-green-50", border: "border-green-200" },
-                    form_photo: { icon: "📸", bg: "bg-blue-50", border: "border-blue-200" },
-                    workout_complete: { icon: "💪", bg: "bg-purple-50", border: "border-purple-200" },
-                    message: { icon: "💬", bg: "bg-gray-50", border: "border-gray-200" },
+                    meal_photo: {
+                      bg: "bg-emerald-50",
+                      border: "border-emerald-200",
+                      stroke: "#059669",
+                      svg: (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+                          <path d="M7 2v20" />
+                          <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z" />
+                          <path d="M21 15v7" />
+                        </svg>
+                      ),
+                    },
+                    form_photo: {
+                      bg: "bg-[#3E9E8E]/10",
+                      border: "border-[#3E9E8E]/20",
+                      stroke: "#2B7B6E",
+                      svg: (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2B7B6E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                          <circle cx="12" cy="13" r="4" />
+                        </svg>
+                      ),
+                    },
+                    workout_complete: {
+                      bg: "bg-fuchsia-50",
+                      border: "border-fuchsia-200",
+                      stroke: "#C026D3",
+                      svg: (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C026D3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6.5 6.5l11 11" />
+                          <path d="M21 21l-1.5-1.5M2.5 2.5L4 4" />
+                          <path d="M14.5 6.5l-3 3M9.5 14.5l-3 3" />
+                          <path d="M18 3l3 3M3 18l3 3" />
+                        </svg>
+                      ),
+                    },
+                    message: {
+                      bg: "bg-slate-100",
+                      border: "border-slate-200",
+                      stroke: "#475569",
+                      svg: (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                      ),
+                    },
                   };
                   const style = icons[a.action_type] || icons.message;
                   const timeAgo = (() => {
@@ -618,7 +651,7 @@ export default function StudentDetail() {
                   return (
                     <div key={a.id} className="flex items-start gap-3 px-4 py-3">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${style.bg} ${style.border}`}>
-                        <span className="text-sm">{style.icon}</span>
+                        {style.svg}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-xs font-medium text-gray-800 leading-snug">{a.title}</div>

@@ -27,7 +27,6 @@ export default function Dashboard() {
     onboardingIncompleteList,
     missingWorkoutList,
     missingNutritionList,
-    recentActivity,
     recentPurchases,
     loading,
     error,
@@ -37,44 +36,70 @@ export default function Dashboard() {
   const firstName = coachName ? coachName.split(" ")[0] : "";
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       {/* Welcome header */}
-      <div>
-        <h1 className="text-2xl font-semibold">
-          {loading ? "Kontrol Paneli" : `${getGreeting()}, ${firstName || "Koç"}`}
-        </h1>
-        {!loading && (
-          <p className="mt-1 text-sm text-gray-600">
-            {activeStudentsCount} aktif öğrenci
-            {unreadMessagesCount > 0 && ` \u00B7 ${unreadMessagesCount} okunmamış mesaj`}
-            {pendingApprovalsCount > 0 && ` \u00B7 ${pendingApprovalsCount} onay bekleyen`}
-          </p>
-        )}
+      <div className="flex items-start gap-3">
+        <div className="w-1 h-12 rounded-full bg-gradient-to-b from-[#3E9E8E] to-[#2B7B6E] flex-shrink-0 mt-1" />
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[30px] font-black tracking-tight text-[#0F172B] leading-[1.1]">
+            {loading ? "Kontrol Paneli" : `${getGreeting()}, ${firstName || "Koç"}`}
+          </h1>
+          {!loading && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#3E9E8E]/10 text-[#2B7B6E] text-[11px] font-bold uppercase tracking-wider border border-[#3E9E8E]/15">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3E9E8E] animate-pulse" />
+                {activeStudentsCount} aktif öğrenci
+              </span>
+              {unreadMessagesCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-fuchsia-50 text-fuchsia-700 text-[11px] font-bold uppercase tracking-wider border border-fuchsia-200">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  {unreadMessagesCount} okunmamış mesaj
+                </span>
+              )}
+              {pendingApprovalsCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[11px] font-bold uppercase tracking-wider border border-amber-200">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  {pendingApprovalsCount} onay bekliyor
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiCard
+          variant="revenue"
           label="Aylık Gelir"
           value={loading ? "..." : formatCurrency(monthlyRevenue)}
           sub="Aktif aboneliklerden"
         />
         <KpiCard
+          variant="students"
           label="Aktif Öğrenciler"
           value={loading ? "..." : String(activeStudentsCount)}
           sub="Size atanmış"
         />
         <KpiCard
+          variant="messages"
           label="Yeni Mesajlar"
           value={loading ? "..." : String(unreadMessagesCount)}
           sub="Öğrencilerden okunmamış"
         />
         <KpiCard
+          variant="pending"
           label="Onay Bekleyenler"
           value={loading ? "..." : String(pendingApprovalsCount)}
           sub="Yeni satın almalar (7 gün)"
         />
         <KpiCard
+          variant="expiring"
           label="Süresi Dolmak Üzere"
           value={loading ? "..." : String(endingSoonCount)}
           sub="7 gün içinde"
@@ -82,7 +107,7 @@ export default function Dashboard() {
       </div>
 
       {/* Panels */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <NeededPanel
           pendingApprovalsCount={pendingApprovalsCount}
           activeStudentsCount={activeStudentsCount}

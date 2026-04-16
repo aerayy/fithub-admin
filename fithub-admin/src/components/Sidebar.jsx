@@ -17,7 +17,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-6 pt-6 pb-8">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#2B7FFF] rounded-[10px] flex items-center justify-center">
+          <div className="w-8 h-8 bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] rounded-[10px] flex items-center justify-center shadow-[0_2px_8px_rgba(62,158,142,0.4)]">
             <span className="text-base font-bold text-white">F</span>
           </div>
           <span className="text-xl font-bold text-white tracking-[-0.949219px]">FitHub</span>
@@ -33,8 +33,8 @@ export default function Sidebar() {
           className={({ isActive }) =>
             `${base} ${
               isActive
-                ? "bg-[#155DFC] text-white shadow-lg"
-                : "text-[#90A1B9] hover:bg-[#1D293D]"
+                ? "bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white shadow-[0_4px_16px_rgba(62,158,142,0.35)]"
+                : "text-[#90A1B9] hover:bg-[#1D293D] hover:text-white"
             }`
           }
         >
@@ -53,8 +53,8 @@ export default function Sidebar() {
           className={({ isActive }) =>
             `${base} ${
               isActive
-                ? "bg-[#155DFC] text-white shadow-lg"
-                : "text-[#90A1B9] hover:bg-[#1D293D]"
+                ? "bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white shadow-[0_4px_16px_rgba(62,158,142,0.35)]"
+                : "text-[#90A1B9] hover:bg-[#1D293D] hover:text-white"
             }`
           }
         >
@@ -74,8 +74,8 @@ export default function Sidebar() {
           className={({ isActive }) =>
             `${base} ${
               isActive
-                ? "bg-[#155DFC] text-white shadow-lg"
-                : "text-[#90A1B9] hover:bg-[#1D293D]"
+                ? "bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white shadow-[0_4px_16px_rgba(62,158,142,0.35)]"
+                : "text-[#90A1B9] hover:bg-[#1D293D] hover:text-white"
             }`
           }
         >
@@ -92,8 +92,8 @@ export default function Sidebar() {
           className={({ isActive }) =>
             `${base} ${
               isActive
-                ? "bg-[#155DFC] text-white shadow-lg"
-                : "text-[#90A1B9] hover:bg-[#1D293D]"
+                ? "bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white shadow-[0_4px_16px_rgba(62,158,142,0.35)]"
+                : "text-[#90A1B9] hover:bg-[#1D293D] hover:text-white"
             }`
           }
         >

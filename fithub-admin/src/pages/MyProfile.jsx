@@ -149,6 +149,7 @@ export default function MyProfile() {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [location, setLocation] = useState("İstanbul, Türkiye"); // UI-only field
   const [mediaTab, setMediaTab] = useState("certificates"); // UI-only: 'certificates' | 'photos'
+  const [referralCode, setReferralCode] = useState("");
 
   // -----------------------------
   // Fetch
@@ -188,7 +189,8 @@ export default function MyProfile() {
       setTitle(fetchedTitle);
       setCertificates(fetchedCertificates);
       setPhotos(fetchedPhotos);
-      
+      setReferralCode(p.referral_code || "");
+
       // Save initial state for change tracking
       setInitialState({
         bio: fetchedBio,
@@ -878,6 +880,38 @@ export default function MyProfile() {
               </div>
             </div>
           </div>
+
+          {/* Referral Code Card */}
+          {referralCode && (
+            <div className="bg-gradient-to-br from-[#3E9E8E]/5 to-white rounded-[18px] p-5 shadow-[0_1px_3px_rgba(15,23,43,0.04),0_8px_24px_rgba(15,23,43,0.04)] border border-[#3E9E8E]/20">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-1 h-5 rounded-full bg-gradient-to-b from-[#3E9E8E] to-[#2B7B6E]" />
+                <h3 className="text-[12px] font-bold uppercase tracking-[0.1em] text-[#0F172B]">Referans Kodu</h3>
+              </div>
+              <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-white border border-[#3E9E8E]/20">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3E9E8E]/15 to-[#3E9E8E]/5 flex items-center justify-center flex-shrink-0 border border-[#3E9E8E]/10">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3E9E8E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                    <line x1="12" y1="11" x2="12" y2="17"/>
+                    <line x1="9" y1="14" x2="15" y2="14"/>
+                  </svg>
+                </div>
+                <span className="flex-1 text-lg font-black tracking-wider text-[#0F172B]">{referralCode}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(referralCode);
+                    showToast("Referans kodu kopyalandı", "success");
+                  }}
+                  className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] text-white text-xs font-bold hover:shadow-md transition-all"
+                >
+                  Kopyala
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2">Bu kodu öğrencilerinle paylaş. Onboarding'de girerek sana direkt ulaşırlar.</p>
+            </div>
+          )}
 
           {/* Social Profiles Card */}
           <div className="bg-white rounded-[18px] p-6 shadow-[0_1px_3px_rgba(15,23,43,0.04),0_8px_24px_rgba(15,23,43,0.04)] border border-slate-100">

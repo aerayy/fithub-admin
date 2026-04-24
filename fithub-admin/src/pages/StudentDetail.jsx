@@ -31,18 +31,31 @@ const TR = {
   ideal: "İdeal",
   flabby: "Yumuşak",
   heavier: "Kilolu",
+  ectomorph: "Ektomorf (ince yapılı)",
+  mesomorph: "Mezomorf (atletik)",
+  endomorph: "Endomorf (kilo almaya yatkın)",
   // Experience
   regular_exercise: "Düzenli egzersiz yapıyorum",
   yes_year_ago: "Evet, yaklaşık 1 yıl önce",
   yes_more_year_ago: "Evet, 1 yıldan fazla önce",
+  beginner: "Başlangıç seviyesi",
+  intermediate: "Orta seviye",
+  advanced: "İleri seviye",
   no: "Hayır",
   // How fit
   too_fit: "Çok fit",
   fit: "Fit",
   not_fit: "Fit değil",
+  moderately_fit: "Orta düzey fit",
   // Knee pain
   yes: "Evet",
-  // Pushups — keep as-is (numeric ranges)
+  // Pushups
+  "zero_to_5": "0-5 tekrar",
+  "0-5": "0-5 tekrar",
+  "5_to_15": "5-15 tekrar",
+  "15-29": "15-29 tekrar",
+  "15_to_29": "15-29 tekrar",
+  "20_plus": "20+ tekrar",
   // Stressed
   not_at_all: "Hiç stresli değilim",
   few_times_week: "Haftada birkaç kez",
@@ -51,12 +64,15 @@ const TR = {
   always: "Her zaman",
   // Commitment
   least_a_year: "En az 1 yıl",
+  least_6_months: "En az 6 ay",
   least_3_months: "En az 3 ay",
   least_a_month: "En az 1 ay",
-  // Workout length
-  short: "Kısa (15-20 dk)",
-  medium: "Orta (30-45 dk)",
-  long: "Uzun (60+ dk)",
+  // Workout length / Nutrition budget (shared values)
+  short: "Kısa",
+  medium: "Orta",
+  long: "Uzun",
+  low: "Düşük",
+  high: "Yüksek",
   // Motivation
   very_motivated: "Çok motiveyim",
   motivated: "Motiveyim",
@@ -478,9 +494,6 @@ export default function StudentDetail() {
         <TabButton active={tab === "form-analysis"} onClick={() => setTab("form-analysis")}>
           Form Analizi
         </TabButton>
-        <TabButton active={tab === "messages"} onClick={() => setTab("messages")}>
-          Mesajlar
-        </TabButton>
       </div>
 
       {/* Content */}
@@ -503,7 +516,6 @@ export default function StudentDetail() {
             <Field label="Ana hedef" value={tr(s.ui.goal)} />
             <Field label="Vücut tipi" value={tr(s.onboarding.body_type)} />
             <Field label="Deneyim" value={tr(s.onboarding.experience)} />
-            <Field label="Diz ağrısı" value={tr(s.onboarding.knee_pain)} />
             <div className="sm:col-span-2">
               <div className="text-xs text-gray-500">Odak bölgeleri</div>
               <div className="mt-1.5">
@@ -549,12 +561,6 @@ export default function StudentDetail() {
               {s.onboarding.food_allergies_other && (
                 <div className="mt-1 text-xs text-gray-600">Diğer: {s.onboarding.food_allergies_other}</div>
               )}
-            </div>
-            <div className="sm:col-span-2">
-              <div className="text-xs text-gray-500">Supplement kullanımı</div>
-              <div className="mt-1.5">
-                <BadgeList items={trArr(tryParseJSON(s.onboarding.supplements))} color="purple" />
-              </div>
             </div>
             <Field label="Beslenme bütçesi" value={tr(s.onboarding.nutrition_budget)} />
           </Section>
@@ -680,9 +686,7 @@ export default function StudentDetail() {
           onPhotoClick={(url, label) => setFormPhotoModal({ url, label })}
           studentId={Number(id)}
         />
-      ) : (
-        <StudentMessages studentId={Number(id)} studentName={parsed?.ui?.fullName || "Öğrenci"} />
-      )}
+      ) : null}
 
       <ToastContainer />
 

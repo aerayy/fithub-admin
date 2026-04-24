@@ -555,10 +555,6 @@ export default function Messages() {
                 />
                 <div>
                   <div className="font-semibold text-gray-900">{chatTarget.client_name || "Öğrenci"}</div>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                    {wsConnected && <span className="w-2 h-2 rounded-full bg-green-500" />}
-                    {wsConnected ? "Çevrimiçi" : "Çevrimdışı"}
-                  </div>
                 </div>
               </div>
             </div>

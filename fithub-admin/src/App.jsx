@@ -16,6 +16,7 @@ import SADashboard from "./pages/superadmin/SADashboard";
 import SACoaches from "./pages/superadmin/SACoaches";
 import SAStudents from "./pages/superadmin/SAStudents";
 import SASubscriptions from "./pages/superadmin/SASubscriptions";
+import SARefunds from "./pages/superadmin/SARefunds";
 
 export default function App() {
   return (
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="coaches" element={<SACoaches />} />
           <Route path="students" element={<SAStudents />} />
           <Route path="subscriptions" element={<SASubscriptions />} />
+          <Route path="refunds" element={<SARefunds />} />
         </Route>
 
         {/* Global fallback */}

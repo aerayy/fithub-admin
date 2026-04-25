@@ -1,0 +1,17 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:5173",
+  "executionArgs": {
+    "projectName": "fithub-admin",
+    "projectPath": "/Users/eraykucuk/FithubPoint/fithubAdmin/fithub-admin",
+    "testIds": [],
+    "additionalInstruction": "Output language: Playwright TypeScript files. Group tests by flow (one .spec.ts per flow: auth, students-list, student-detail, onboarding-render, programs-tab, messages, edge-cases). Test titles can be Turkish (e.g. \"Doğru credential ile login başarılı\"). Use credentials elif.demir@fithub.demo / FitHub2026Demo! as the primary coach (Buse'nin koçu) and kaan.yildiz@fithub.demo / FitHub2026Demo! as secondary (Deniz'in koçu). Existing students in DB: buse.celik@fithub.demo (Mon/Wed/Fri/Sat — 4 days), deniz.korkmaz@fithub.demo. The generated suite should accept process.env.BASE_URL (default http://localhost:5173) so the same code can run against https://fithub-admin-nwtg.onrender.com production. AI workout generation can take 10-60s; use 120s timeout for that flow. Skip mobile responsive, multi-language, image upload tests. Strict assertions: Genel Bakış must NOT contain \"Diz ağrısı\" or \"Supplement\"; StudentDetail tabs must be exactly [\"Genel Bakış\",\"Programlar\",\"Öğün Fotoğrafları\",\"Form Analizi\"] with no \"Mesajlar\" tab; Messages page must NOT show \"Çevrimiçi\" or \"Çevrimdışı\" text.",
+    "serverMode": "production",
+    "envs": {
+      "API_KEY": "sk-user-zHYCTZWmze_SjYWIdxTukQB1Azll60GBxVhobXH5NqxSeqJzGCuKRZZ6yAx1PRXaVe8t7h_0DDqHK_h8F_Wmh_Hb44Ieca0wiuVTdMoaX_wVtTt8Ao6k2pY-r6IKDMiMNl4"
+    }
+  },
+  "serverPort": 55050
+}

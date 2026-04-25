@@ -1107,11 +1107,14 @@ function MealPhotosTab({ studentId }) {
 
             {/* Compact list */}
             <div className="divide-y">
-              {dayPhotos.map((p) => (
+              {dayPhotos.map((p) => {
+                const ai = p.ai_analysis;
+                const aiStatus = p.ai_analysis_status;
+                return (
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => setModalUrl({ url: p.photo_url, label: cleanMealLabel(p.meal_label), time: fmtTime(p.created_at), retake: p.is_retake })}
+                  onClick={() => setModalUrl({ url: p.photo_url, label: cleanMealLabel(p.meal_label), time: fmtTime(p.created_at), retake: p.is_retake, ai, aiStatus })}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-gray-50"
                 >
                   {/* Tiny thumbnail */}
@@ -1133,10 +1136,25 @@ function MealPhotosTab({ studentId }) {
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-gray-400">{fmtTime(p.created_at)}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[11px] text-gray-400">{fmtTime(p.created_at)}</span>
+                      {ai && aiStatus === "completed" && (
+                        <span className="inline-flex items-center gap-1 rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
+                          <span>🤖</span>
+                          <span>{ai.calories} kcal · P:{ai.protein_g}g K:{ai.carbs_g}g Y:{ai.fat_g}g</span>
+                        </span>
+                      )}
+                      {aiStatus === "processing" && (
+                        <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+                          <span className="animate-pulse">🤖</span>
+                          <span>Analiz ediliyor...</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}
@@ -1166,6 +1184,62 @@ function MealPhotosTab({ studentId }) {
                 </span>
               )}
             </div>
+
+            {/* AI Analysis card — BETA */}
+            {modalUrl.ai && modalUrl.aiStatus === "completed" && (
+              <div className="mt-3 rounded-2xl bg-white/95 p-4 shadow-lg max-w-md mx-auto">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🤖</span>
+                    <span className="text-sm font-bold text-gray-800">AI Tahmini</span>
+                    <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-purple-700">BETA</span>
+                  </div>
+                  <span className="text-[10px] text-gray-400">
+                    Güven: {modalUrl.ai.confidence === "high" ? "Yüksek" : modalUrl.ai.confidence === "low" ? "Düşük" : "Orta"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="rounded-lg bg-orange-50 p-2">
+                    <div className="text-[10px] font-medium uppercase text-orange-600">Kalori</div>
+                    <div className="text-base font-bold text-orange-700">{modalUrl.ai.calories}</div>
+                    <div className="text-[9px] text-orange-500">kcal</div>
+                  </div>
+                  <div className="rounded-lg bg-red-50 p-2">
+                    <div className="text-[10px] font-medium uppercase text-red-600">Protein</div>
+                    <div className="text-base font-bold text-red-700">{modalUrl.ai.protein_g}g</div>
+                  </div>
+                  <div className="rounded-lg bg-yellow-50 p-2">
+                    <div className="text-[10px] font-medium uppercase text-yellow-600">Karb.</div>
+                    <div className="text-base font-bold text-yellow-700">{modalUrl.ai.carbs_g}g</div>
+                  </div>
+                  <div className="rounded-lg bg-blue-50 p-2">
+                    <div className="text-[10px] font-medium uppercase text-blue-600">Yağ</div>
+                    <div className="text-base font-bold text-blue-700">{modalUrl.ai.fat_g}g</div>
+                  </div>
+                </div>
+                {Array.isArray(modalUrl.ai.items) && modalUrl.ai.items.length > 0 && (
+                  <div className="mt-2 text-xs text-gray-600">
+                    <div className="font-semibold mb-1">Tespit edilen yemekler:</div>
+                    <ul className="space-y-0.5">
+                      {modalUrl.ai.items.map((it, idx) => (
+                        <li key={idx} className="flex justify-between">
+                          <span>{it.name}</span>
+                          <span className="text-gray-400">~{it.estimated_g}g</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="mt-2 text-[10px] text-gray-400 italic text-center">
+                  AI tahmini — ±%20-30 hata payı olabilir, koç onaylar
+                </div>
+              </div>
+            )}
+            {modalUrl.aiStatus === "processing" && (
+              <div className="mt-3 rounded-2xl bg-white/90 p-4 text-center max-w-md mx-auto">
+                <span className="text-sm text-gray-600">🤖 AI analizi devam ediyor...</span>
+              </div>
+            )}
             <button
               onClick={() => setModalUrl(null)}
               className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-800 shadow-lg hover:bg-gray-100"

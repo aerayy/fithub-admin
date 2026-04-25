@@ -1,0 +1,207 @@
+version: "2"
+type: frontend
+tech_stack:
+  - JavaScript (ES2022, JSX)
+  - React 19
+  - React Router DOM 7
+  - Vite 7
+  - TailwindCSS 3.4
+  - axios (via custom api wrapper)
+  - lucide-react (icons)
+  - PostCSS / Autoprefixer
+  - Backend: FastAPI on Render (https://fithub-backend-jd40.onrender.com)
+  - Production frontend: https://fithub-admin-nwtg.onrender.com
+routes:
+  - path: /login
+    file: src/pages/Login.jsx
+    auth_required: false
+    description: Coach login page (email + password)
+  - path: /signup
+    file: src/pages/Signup.jsx
+    auth_required: false
+    description: Coach signup page
+  - path: /
+    file: src/pages/Dashboard.jsx
+    auth_required: true
+    description: Coach dashboard (KPI cards, recent activity)
+  - path: /students
+    file: src/pages/Students.jsx
+    auth_required: true
+    description: Coach's student list with All / Active / New (7d) tabs and search
+  - path: /students/:id
+    file: src/pages/StudentDetail.jsx
+    auth_required: true
+    description: Student detail with 4 tabs (Genel Bakış, Programlar, Öğün Fotoğrafları, Form Analizi)
+  - path: /messages
+    file: src/pages/Messages.jsx
+    auth_required: true
+    description: Coach messaging (conversation list + chat view)
+  - path: /profile
+    file: src/pages/MyProfile.jsx
+    auth_required: true
+    description: Coach profile management
+  - path: /sa
+    file: src/pages/superadmin/SADashboard.jsx
+    auth_required: true
+    description: Superadmin dashboard
+features:
+  - name: Coach Login
+    description: Email/password login. Empty form triggers HTML5 validation. Wrong credentials show "E-posta veya şifre hatalı." inline. Successful login navigates to /.
+    files:
+      - src/pages/Login.jsx
+      - src/lib/auth.js
+      - src/lib/api.js
+    entry_route: /login
+    user_interactions:
+      - Submit empty form → email required validation
+      - Type wrong password → red error banner with Turkish message
+      - Type correct credentials → redirected to / (Dashboard)
+      - Loading state shows "Giriş yapılıyor..." text on button
+    api_calls:
+      - method: POST
+        endpoint: /auth/login
+    auth_required: false
+  - name: Logout
+    description: Logout from sidebar/topbar clears token. Pressing back after logout should NOT re-enter dashboard.
+    files:
+      - src/components/Sidebar.jsx
+      - src/components/Topbar.jsx
+      - src/lib/auth.js
+      - src/components/ProtectedRoute.jsx
+    entry_route: /
+    user_interactions:
+      - Click Çıkış Yap button → navigates to /login
+      - localStorage token cleared
+      - ProtectedRoute redirects authenticated routes back to /login
+    api_calls: []
+    auth_required: true
+  - name: Student List
+    description: Loads /coach/students/all by default. Tabs Tümü/Aktif/Yeni(7g). Click a row → /students/:id. Search bar filters by name/email/goal/package.
+    files:
+      - src/pages/Students.jsx
+      - src/lib/api.js
+    entry_route: /students
+    user_interactions:
+      - Page loads, skeleton shown then student rows
+      - Click row → navigate to /students/:id
+      - Type query in search box → filters list
+      - Click Aktif/Yeni(7g) tabs → endpoint switches
+    api_calls:
+      - method: GET
+        endpoint: /coach/students/all
+      - method: GET
+        endpoint: /coach/students/active
+      - method: GET
+        endpoint: /coach/students/new-purchases?days=7
+    auth_required: true
+  - name: Student Detail Tabs
+    description: Four tabs (Genel Bakış, Programlar, Öğün Fotoğrafları, Form Analizi). Mesajlar tab was removed; Mesajlar exists only in sidebar.
+    files:
+      - src/pages/StudentDetail.jsx
+      - src/components/ProgramsTab.jsx
+    entry_route: /students/:id
+    user_interactions:
+      - Default tab Genel Bakış loads onboarding fields in Turkish
+      - Click Programlar → ProgramsTab renders
+      - Click Öğün Fotoğrafları → MealPhotosTab renders
+      - Click Form Analizi → form analysis section renders
+      - There must NOT be a Mesajlar tab in this tab bar
+    api_calls:
+      - method: GET
+        endpoint: /coach/students/:id
+    auth_required: true
+  - name: Onboarding Data Localized Render
+    description: Onboarding values rendered in Turkish (e.g. beginner=Başlangıç seviyesi, endomorph=Endomorf, low=Düşük, moderately_fit=Orta düzey fit). Diz ağrısı and Supplement kullanımı fields removed. Preferred days shown as Pazartesi/Çarşamba/... joined with comma.
+    files:
+      - src/pages/StudentDetail.jsx
+    entry_route: /students/:id
+    user_interactions:
+      - Open Genel Bakış tab and verify Turkish labels
+      - Verify no Diz ağrısı / Supplement rows are present
+      - Verify preferred days in Turkish
+    api_calls:
+      - method: GET
+        endpoint: /coach/students/:id
+    auth_required: true
+  - name: AI Workout Program Generation (Programlar tab)
+    description: AI ile Üret button calls backend AI endpoint. Loading indicator visible during generation. Generated program shows 4–5 day plan; for Buse demo seed, it should produce 4 days (Mon/Wed/Fri/Sat).
+    files:
+      - src/components/ProgramsTab.jsx
+      - src/pages/StudentDetail.jsx
+    entry_route: /students/:id
+    user_interactions:
+      - Click Programlar tab
+      - Click AI ile Üret button
+      - Loading spinner / status text appears
+      - Program preview rendered with 4–5 day cards
+    api_calls:
+      - method: POST
+        endpoint: /coach/students/:id/workout-programs/generate
+    auth_required: true
+  - name: Draft System (Programlar tab)
+    description: Up to 3 workout draft tabs can be created. Saving past 3 should be blocked or oldest replaced.
+    files:
+      - src/components/ProgramsTab.jsx
+    entry_route: /students/:id
+    user_interactions:
+      - Generate first draft → tab #1
+      - Generate second draft → tab #2
+      - Generate third draft → tab #3
+      - Attempt to generate fourth → limit enforced (no 4th tab visible)
+    api_calls:
+      - method: GET
+        endpoint: /coach/students/:id/workout-drafts
+      - method: POST
+        endpoint: /coach/students/:id/workout-drafts
+      - method: DELETE
+        endpoint: /coach/students/:id/workout-drafts/:draftId
+    auth_required: true
+  - name: Messages (Conversation list + Chat)
+    description: /messages route shows conversations with active students. Selecting a conversation opens chat. No Çevrimiçi/Çevrimdışı status (removed). Send a message and see it appear in the message list.
+    files:
+      - src/pages/Messages.jsx
+      - src/lib/api.js
+      - src/hooks/useWebSocket.js
+    entry_route: /messages
+    user_interactions:
+      - Page load → conversation list visible
+      - Select conversation → chat panel opens with history
+      - Verify no online/offline pill is rendered
+      - Type message in textarea → click send → message appears in list
+    api_calls:
+      - method: GET
+        endpoint: /coach/conversations
+      - method: GET
+        endpoint: /coach/conversations/:id/messages
+      - method: POST
+        endpoint: /coach/conversations/:id/messages
+    auth_required: true
+  - name: Turkish Character Rendering
+    description: All TR diacritics (ç, ş, ğ, ü, ö, ı, İ, Ç, Ş, Ğ, Ü, Ö) render correctly across the app — names, labels, statuses, button text.
+    files:
+      - src/**/*.jsx
+    entry_route: /
+    user_interactions:
+      - Spot-check labels on Login, Students, StudentDetail, Messages
+    api_calls: []
+    auth_required: true
+  - name: Network Error Handling
+    description: When backend is unreachable, errors are translated through errorHandler.translateError() and shown via Toast — never raw exception text.
+    files:
+      - src/lib/errorHandler.js
+      - src/components/Toast.jsx
+    entry_route: /students
+    user_interactions:
+      - Force offline / 5xx → toast shows user-friendly TR message
+    api_calls: []
+    auth_required: true
+known_limitations:
+  - issue: Tests run against production URL https://fithub-admin-nwtg.onrender.com when BASE_URL env is set; otherwise hit local preview on 5173.
+    location: vite.config.js / playwright config
+    impact: Slower runs against production, depends on Render cold start.
+  - issue: Free TestSprite plan caps at 30 production tests / 15 dev tests per run.
+    location: TestSprite limit
+    impact: Test plan must be prioritized; lower-priority cases may be skipped.
+  - issue: AI program generation can be slow (10–60s) depending on backend cold start and OpenAI latency.
+    location: Backend /coach/students/:id/workout-programs/generate
+    impact: Tests need long timeout (≥120s) for AI generation flows.

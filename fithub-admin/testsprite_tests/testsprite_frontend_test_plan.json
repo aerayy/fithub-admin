@@ -1,0 +1,1479 @@
+[
+  {
+    "id": "TC001",
+    "title": "Coach can log in and reach dashboard",
+    "description": "Verifies that a coach can log in with valid credentials and is redirected to the dashboard.",
+    "category": "Coach Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the dashboard"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Coach can log out and protected pages remain inaccessible",
+    "description": "Verifies that logging out redirects to the login page and navigating to a protected route after logout redirects back to login.",
+    "category": "Logout",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Initiate logout"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /students"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is redirected to the login page"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Coach sees Turkish error for invalid credentials",
+    "description": "Verifies that a coach entering incorrect credentials sees an inline Turkish credential error and is not logged in.",
+    "category": "Coach Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with invalid@example.com"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with wrong-password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an inline Turkish login error is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Coach cannot submit empty login form",
+    "description": "Verifies that submitting the login form without credentials is blocked by required-field validation and the user remains on the login page.",
+    "category": "Coach Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify required-field validation is shown for the email and password fields"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Login rejects empty credentials with Turkish validation",
+    "description": "Verifies that submitting the login form with empty required fields shows Turkish validation errors and does not log the user in.",
+    "category": "Error & Validation Messaging (user-triggered)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify required-field validation errors are visible in Turkish"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Login rejects invalid credentials with user-friendly Turkish error",
+    "description": "Verifies that entering invalid credentials on the login form shows a user-friendly Turkish error and the user remains on the login experience.",
+    "category": "Error & Validation Messaging (user-triggered)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with invalid-user@example.com"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with wrong-password-123"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a login failure message is visible in Turkish"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Generate AI workout program and preview multi-day plan",
+    "description": "A coach can generate an AI workout program from the Programlar tab and sees a rendered multi-day plan preview after the loading state completes.",
+    "category": "AI Workout Program Generation (Programlar tab)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Programlar tab"
+      },
+      {
+        "type": "action",
+        "description": "Start AI generation for the workout program"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a loading indicator for program generation is shown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a workout program preview is displayed with multiple day cards"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Send a message in an existing conversation",
+    "description": "Verifies that a coach can send a message in a conversation and the new message appears in the chat history.",
+    "category": "Messages (Conversation list + Chat)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open Messages"
+      },
+      {
+        "type": "action",
+        "description": "Select a conversation from the conversation list"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"Otomasyon test mesajı\" into the message input field"
+      },
+      {
+        "type": "action",
+        "description": "Send the message"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the newly sent message appears in the chat history"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Load students list and open a student detail",
+    "description": "Verifies a coach can load the students list from the dashboard, see list content after loading state, and open a student detail successfully.",
+    "category": "Student List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Click the first student in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the student detail page is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Dashboard shows KPIs and recent purchases list",
+    "description": "Verifies that the dashboard loads and displays KPI cards and a recent purchases section for the logged-in coach.",
+    "category": "Dashboard",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify KPI cards are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a recent purchases list is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Create first workout draft tab from program generation",
+    "description": "A coach can create a first workout draft in Programlar and sees the first draft tab appear.",
+    "category": "Draft System (Programlar tab)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Programlar tab"
+      },
+      {
+        "type": "action",
+        "description": "Generate the first workout draft"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a first draft tab is visible in the drafts area"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Open conversation list",
+    "description": "Verifies that a logged-in coach can open Messages and see a populated conversation list.",
+    "category": "Messages (Conversation list + Chat)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open Messages"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the conversation list is displayed with at least one conversation item"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Search students by query",
+    "description": "Verifies a coach can search the students list and see the displayed list update to match the query.",
+    "category": "Student List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Fill a short query into the search field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the visible student list updates to match the search query"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Open a conversation thread",
+    "description": "Verifies that selecting a conversation opens the chat panel with message history visible.",
+    "category": "Messages (Conversation list + Chat)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open Messages"
+      },
+      {
+        "type": "action",
+        "description": "Select a conversation from the conversation list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the chat panel opens and message history is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "Coach can navigate from dashboard to students list",
+    "description": "Verifies that a logged-in coach can navigate from the dashboard to the students list via in-app navigation.",
+    "category": "Dashboard",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation item to open the students list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the students list page is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Navigate across all student detail tabs",
+    "description": "Verifies a coach can open each of the four student detail tabs and each tab renders its corresponding content.",
+    "category": "Student Detail Tabs (Genel Bakış, Programlar, Öğün Fotoğrafları, Form Analizi)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Click the first student in the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Programlar tab"
+      },
+      {
+        "type": "action",
+        "description": "Click the Öğün Fotoğrafları tab"
+      },
+      {
+        "type": "action",
+        "description": "Click the Form Analizi tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the currently selected tab displays its corresponding section content"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "AI generation shows and clears loading state",
+    "description": "A coach sees a visible loading state while AI generation runs and it disappears once the program preview is ready.",
+    "category": "AI Workout Program Generation (Programlar tab)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Programlar tab"
+      },
+      {
+        "type": "action",
+        "description": "Start AI generation for the workout program"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a program generation loading state is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the loading state is no longer visible and the program preview is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "Filter students to Active tab",
+    "description": "Verifies a coach can switch to the Active students tab and see the list update to that filter.",
+    "category": "Student List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Click the tab for active students"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the students list reflects the active filter state"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC019",
+    "title": "Form analysis tab shows four-angle photos",
+    "description": "Verifies that a coach can open a student’s Form Analizi tab and see front/back/left/right photos present.",
+    "category": "Form Analysis (Form Analizi)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open Students"
+      },
+      {
+        "type": "action",
+        "description": "Select a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Open the Form Analizi tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify front, back, left, and right form photos are present"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC020",
+    "title": "Generate program preview displays expected day count range",
+    "description": "A coach can generate a program and the preview renders a valid plan structure showing 4–5 day cards.",
+    "category": "AI Workout Program Generation (Programlar tab)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Programlar tab"
+      },
+      {
+        "type": "action",
+        "description": "Start AI generation for the workout program"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the generated program preview is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the preview shows multiple day cards consistent with a 4–5 day plan"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC021",
+    "title": "Edit bio and social links and save",
+    "description": "Verifies that a coach can update bio and social links on My Profile and the changes are reflected after saving.",
+    "category": "My Profile",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open My Profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"Test bio güncellemesi\" into the bio field"
+      },
+      {
+        "type": "action",
+        "description": "Fill \"https://example.com/test\" into a social link field"
+      },
+      {
+        "type": "action",
+        "description": "Save profile changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated profile information is reflected on the page"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC022",
+    "title": "Filter students to New purchases in last 7 days tab",
+    "description": "Verifies a coach can switch to the New (7 days) tab and see the list update to recent purchases.",
+    "category": "Student List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Click the tab for new purchases in the last 7 days"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the students list reflects the recent purchases filter state"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC023",
+    "title": "Create second workout draft tab",
+    "description": "A coach can generate a second workout draft and sees an additional draft tab appear without losing the first.",
+    "category": "Draft System (Programlar tab)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Programlar tab"
+      },
+      {
+        "type": "action",
+        "description": "Generate the first workout draft"
+      },
+      {
+        "type": "action",
+        "description": "Generate the second workout draft"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify at least two draft tabs are visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC024",
+    "title": "Student detail shows exactly four tabs and no Messages tab",
+    "description": "Verifies the student detail tab bar contains only the four intended tabs and does not include a Messages tab.",
+    "category": "Student Detail Tabs (Genel Bakış, Programlar, Öğün Fotoğrafları, Form Analizi)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Click the first student in the list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the tab bar shows Genel Bakış, Programlar, Öğün Fotoğrafları, and Form Analizi and does not show a Mesajlar tab"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "View meal photos in a grid",
+    "description": "A coach can open Öğün Fotoğrafları and sees meal photos displayed in a grid for the selected student.",
+    "category": "Meal Photos (Öğün Fotoğrafları)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Öğün Fotoğrafları tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify meal photos are displayed in a grid"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Enlarge a form photo in modal viewer",
+    "description": "Verifies that opening a form photo from Form Analizi shows the photo enlarged in a modal viewer.",
+    "category": "Form Analysis (Form Analizi)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open Students"
+      },
+      {
+        "type": "action",
+        "description": "Select a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Open the Form Analizi tab"
+      },
+      {
+        "type": "action",
+        "description": "Open a form photo"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an enlarged photo viewer modal is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC027",
+    "title": "View current profile information",
+    "description": "Verifies that a logged-in coach can open My Profile and see current profile information loaded.",
+    "category": "My Profile",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open My Profile"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify profile information is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC028",
+    "title": "Genel Bakış renders onboarding values in Turkish and omits removed fields",
+    "description": "Verifies the student overview renders onboarding labels/values localized to Turkish and does not show the removed Diz ağrısı or Supplement kullanımı fields.",
+    "category": "Onboarding Data Localized Render",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Click the first student in the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Genel Bakış tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify onboarding labels and values are displayed in Turkish and the removed fields are not displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC029",
+    "title": "Create third workout draft tab",
+    "description": "A coach can generate a third workout draft and sees three draft tabs available for the student.",
+    "category": "Draft System (Programlar tab)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Programlar tab"
+      },
+      {
+        "type": "action",
+        "description": "Generate the first workout draft"
+      },
+      {
+        "type": "action",
+        "description": "Generate the second workout draft"
+      },
+      {
+        "type": "action",
+        "description": "Generate the third workout draft"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify three draft tabs are visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC030",
+    "title": "Turkish diacritics render correctly on the login page",
+    "description": "Verifies Turkish diacritics render correctly on the login page labels and UI text.",
+    "category": "Turkish Character Rendering",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify Turkish diacritics (ç, ş, ğ, ü, ö, ı, İ) render correctly on visible labels and UI text"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC031",
+    "title": "No online/offline status pill in Messages UI",
+    "description": "Verifies that the Messages conversation list and chat UI do not render any online/offline status indicator.",
+    "category": "Messages (Conversation list + Chat)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open Messages"
+      },
+      {
+        "type": "action",
+        "description": "Select a conversation from the conversation list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify there is no online/offline status pill or status label shown for the selected conversation"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC032",
+    "title": "Clear search restores full list within current tab",
+    "description": "Verifies clearing the search input returns the student list to the unfiltered state for the currently selected tab.",
+    "category": "Student List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Fill a short query into the search field"
+      },
+      {
+        "type": "action",
+        "description": "Clear the search field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the full unfiltered students list is shown for the current tab"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC033",
+    "title": "Open a meal photo in enlarged viewer",
+    "description": "A coach can open a meal photo from the grid and see an enlarged photo viewer or modal.",
+    "category": "Meal Photos (Öğün Fotoğrafları)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Öğün Fotoğrafları tab"
+      },
+      {
+        "type": "action",
+        "description": "Click a meal photo from the grid"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an enlarged meal photo viewer is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC034",
+    "title": "Copy referral code",
+    "description": "Verifies that a coach can copy the referral code from My Profile and receives a visible confirmation.",
+    "category": "My Profile",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open My Profile"
+      },
+      {
+        "type": "action",
+        "description": "Click the control to copy the referral code"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a copy confirmation is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC035",
+    "title": "Search persists while switching tabs",
+    "description": "Verifies a coach can enter a search query and switch tabs while keeping the list constrained by the query.",
+    "category": "Student List",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Fill a short query into the search field"
+      },
+      {
+        "type": "action",
+        "description": "Click the tab for active students"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the visible student list remains filtered by the search query"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC036",
+    "title": "Enforce three-draft limit by blocking a fourth draft",
+    "description": "A coach cannot create a fourth workout draft and the UI does not show a fourth draft tab after attempting to generate it.",
+    "category": "Draft System (Programlar tab)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Click a student from the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Programlar tab"
+      },
+      {
+        "type": "action",
+        "description": "Generate the first workout draft"
+      },
+      {
+        "type": "action",
+        "description": "Generate the second workout draft"
+      },
+      {
+        "type": "action",
+        "description": "Generate the third workout draft"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to generate a fourth workout draft"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no additional draft tab beyond the existing three is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC037",
+    "title": "Preferred training days are displayed as Turkish day names joined together",
+    "description": "Verifies the preferred training days field shows Turkish day names combined in a single readable list.",
+    "category": "Onboarding Data Localized Render",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to Students"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the students list to finish loading"
+      },
+      {
+        "type": "action",
+        "description": "Click the first student in the list"
+      },
+      {
+        "type": "action",
+        "description": "Click the Genel Bakış tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify preferred training days are shown as Turkish day names joined with commas"
+      }
+    ],
+    "priority": "Low"
+  }
+]

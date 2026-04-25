@@ -361,6 +361,9 @@ export default function ProgramsTab() {
   const [nutritionDrafts, setNutritionDrafts] = useState([]);
   const [selectedNutritionDraftIdx, setSelectedNutritionDraftIdx] = useState(0);
   const [draftSaving, setDraftSaving] = useState(false);
+  // Draft kaydederken: ad + opsiyonel zamanlama dialog'u
+  const [draftSaveDialog, setDraftSaveDialog] = useState(null);
+  // {type: 'workout'|'nutrition', payload: ..., defaultName: '...'}
 
   const fetchWorkoutDrafts = async () => {
     if (!studentId) return;
@@ -378,31 +381,37 @@ export default function ProgramsTab() {
     } catch (_) {}
   };
 
-  const saveWorkoutDraft = async (name, payload) => {
+  const saveWorkoutDraft = async (name, payload, scheduledAt) => {
     if (!studentId) return;
     setDraftSaving(true);
     try {
-      await api.post(`/coach/students/${studentId}/workout-drafts`, { name, payload });
-      showToast("Antrenman taslağı kaydedildi", "success");
+      const body = { name, payload };
+      if (scheduledAt) body.scheduled_at = scheduledAt;
+      await api.post(`/coach/students/${studentId}/workout-drafts`, body);
+      showToast(scheduledAt ? "Zamanlanmış taslak kaydedildi" : "Antrenman taslağı kaydedildi", "success");
       await fetchWorkoutDrafts();
       setSelectedWorkoutDraftIdx(0);
     } catch (e) {
-      showToast("Taslak kaydedilemedi", "error");
+      const msg = e?.response?.data?.detail || "Taslak kaydedilemedi";
+      showToast(msg, "error");
     } finally {
       setDraftSaving(false);
     }
   };
 
-  const saveNutritionDraft = async (name, payload) => {
+  const saveNutritionDraft = async (name, payload, scheduledAt) => {
     if (!studentId) return;
     setDraftSaving(true);
     try {
-      await api.post(`/coach/students/${studentId}/nutrition-drafts`, { name, payload });
-      showToast("Beslenme taslağı kaydedildi", "success");
+      const body = { name, payload };
+      if (scheduledAt) body.scheduled_at = scheduledAt;
+      await api.post(`/coach/students/${studentId}/nutrition-drafts`, body);
+      showToast(scheduledAt ? "Zamanlanmış taslak kaydedildi" : "Beslenme taslağı kaydedildi", "success");
       await fetchNutritionDrafts();
       setSelectedNutritionDraftIdx(0);
     } catch (e) {
-      showToast("Taslak kaydedilemedi", "error");
+      const msg = e?.response?.data?.detail || "Taslak kaydedilemedi";
+      showToast(msg, "error");
     } finally {
       setDraftSaving(false);
     }
@@ -1119,11 +1128,14 @@ export default function ProgramsTab() {
               showToast(msg, "error");
             }
           }}
-          onDraftSave={async (week) => {
-            const name = prompt("Taslak adı:", `Taslak ${workoutDrafts.length + 1}`);
-            if (name === null) return;
-            await saveWorkoutDraft(name || `Taslak ${workoutDrafts.length + 1}`, week);
+          onDraftSave={(week) => {
+            // Modal'ı kapat, sonra draft save dialog'u aç (ad + opsiyonel zamanlama)
             setOpen(null);
+            setDraftSaveDialog({
+              type: "workout",
+              payload: week,
+              defaultName: `Taslak ${workoutDrafts.length + 1}`,
+            });
           }}
         />
       </Modal>
@@ -1147,11 +1159,13 @@ export default function ProgramsTab() {
               showToast(msg, "error");
             }
           }}
-          onDraftSave={async (week, supplements) => {
-            const name = prompt("Taslak adı:", `Taslak ${nutritionDrafts.length + 1}`);
-            if (name === null) return;
-            await saveNutritionDraft(name || `Taslak ${nutritionDrafts.length + 1}`, { week, supplements });
+          onDraftSave={(week, supplements) => {
             setOpen(null);
+            setDraftSaveDialog({
+              type: "nutrition",
+              payload: { week, supplements },
+              defaultName: `Taslak ${nutritionDrafts.length + 1}`,
+            });
           }}
         />
       </Modal>
@@ -1162,7 +1176,126 @@ export default function ProgramsTab() {
         sessions={cardioSessions}
         onSave={saveCardioProgram}
       />
+
+      <DraftSaveDialog
+        dialog={draftSaveDialog}
+        onCancel={() => setDraftSaveDialog(null)}
+        saving={draftSaving}
+        onSave={async (name, scheduledAt) => {
+          if (!draftSaveDialog) return;
+          if (draftSaveDialog.type === "workout") {
+            await saveWorkoutDraft(name, draftSaveDialog.payload, scheduledAt);
+          } else {
+            await saveNutritionDraft(name, draftSaveDialog.payload, scheduledAt);
+          }
+          setDraftSaveDialog(null);
+        }}
+      />
+
       <ToastContainer />
     </>
+  );
+}
+
+function DraftSaveDialog({ dialog, onCancel, onSave, saving }) {
+  const [name, setName] = useState("");
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState("");
+
+  useEffect(() => {
+    if (dialog) {
+      setName(dialog.defaultName || "Taslak");
+      setScheduleEnabled(false);
+      setScheduledAt("");
+    }
+  }, [dialog]);
+
+  if (!dialog) return null;
+
+  const submit = async () => {
+    const finalName = (name || "").trim() || dialog.defaultName || "Taslak";
+    let isoSchedule = null;
+    if (scheduleEnabled && scheduledAt) {
+      // datetime-local → ISO 8601 (with timezone)
+      const d = new Date(scheduledAt);
+      if (isNaN(d.getTime())) {
+        alert("Geçersiz tarih/saat");
+        return;
+      }
+      if (d.getTime() <= Date.now()) {
+        if (!confirm("Seçtiğin zaman geçmişte. Bir sonraki cron tetiklemesinde hemen aktive olacak. Devam?")) return;
+      }
+      isoSchedule = d.toISOString();
+    }
+    await onSave(finalName, isoSchedule);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="text-lg font-bold text-gray-900">Taslak Kaydet</div>
+        <p className="mt-1 text-sm text-gray-500">
+          {dialog.type === "workout" ? "Antrenman taslağı" : "Beslenme taslağı"} olarak kaydet.
+          İstersen ileri bir tarihe zamanla — o zaman geldiğinde otomatik aktif olur.
+        </p>
+
+        <div className="mt-5 space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-gray-700">Taslak Adı</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#3E9E8E] focus:outline-none focus:ring-1 focus:ring-[#3E9E8E]"
+              placeholder="Taslak 1"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={scheduleEnabled}
+                onChange={(e) => setScheduleEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-[#3E9E8E] focus:ring-[#3E9E8E]"
+              />
+              <span className="text-sm font-medium text-gray-700">İleri tarihe zamanla</span>
+            </label>
+            {scheduleEnabled && (
+              <div className="mt-3">
+                <label className="mb-1.5 block text-xs font-semibold text-gray-700">Aktivasyon Zamanı</label>
+                <input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#3E9E8E] focus:outline-none focus:ring-1 focus:ring-[#3E9E8E]"
+                />
+                <p className="mt-1.5 text-xs text-gray-500">
+                  Seçtiğin tarihte taslak otomatik aktif programa dönüşür ve öğrenciye assign edilir.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            disabled={saving}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+          >
+            Vazgeç
+          </button>
+          <button
+            onClick={submit}
+            disabled={saving || (scheduleEnabled && !scheduledAt)}
+            className="rounded-lg bg-gradient-to-br from-[#3E9E8E] to-[#2B7B6E] px-4 py-2 text-sm font-bold text-white hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? "Kaydediliyor..." : "Kaydet"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

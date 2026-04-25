@@ -60,17 +60,37 @@ export default function ProgramCard({
       {/* Draft tabs — inside the card */}
       {(hasDrafts || onNewDraft) && (
         <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-          {(drafts || []).map((d, idx) => (
+          {(drafts || []).map((d, idx) => {
+            const scheduled = d.scheduled_at && !d.activated_at;
+            const scheduledDate = scheduled ? new Date(d.scheduled_at) : null;
+            const scheduledLabel = scheduled
+              ? scheduledDate.toLocaleDateString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+              : null;
+            return (
             <button
               key={d.id}
               onClick={() => onDraftSelect?.(idx)}
               className={`group relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
                 selectedDraftIdx === idx
                   ? "bg-[#3E9E8E]/10 border-[#3E9E8E]/30 text-[#2B7B6E]"
+                  : scheduled
+                  ? "bg-amber-50 border-amber-200 text-amber-800 hover:border-amber-300"
                   : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
               }`}
+              title={scheduled ? `Zamanlandı: ${scheduledLabel} — bu tarihte otomatik aktif olacak` : undefined}
             >
+              {scheduled && (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              )}
               {d.name || `Taslak ${idx + 1}`}
+              {scheduled && (
+                <span className="text-[10px] font-normal opacity-80">{scheduledLabel}</span>
+              )}
               {onDeleteDraft && (
                 <span
                   onClick={(e) => { e.stopPropagation(); onDeleteDraft(d.id); }}
@@ -81,7 +101,8 @@ export default function ProgramCard({
                 </span>
               )}
             </button>
-          ))}
+            );
+          })}
           {onNewDraft && (
             <button
               onClick={onNewDraft}

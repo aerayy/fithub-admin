@@ -401,22 +401,40 @@ export default function StudentDetail() {
     if (!id) return;
     setAssignLoading(true);
     try {
-      await api.post(`/coach/students/${id}/workout-programs/assign`);
-      // Success feedback
-      showToast("Program başarıyla atandı!", "success");
-      // Switch to programs tab and refresh
+      // Hem antrenman hem beslenme programini ayni butonla atar.
+      // Birinde program yoksa (404) sessizce atlar, ikisini de denemis olur.
+      const results = await Promise.allSettled([
+        api.post(`/coach/students/${id}/workout-programs/assign`),
+        api.post(`/coach/students/${id}/nutrition-programs/assign`),
+      ]);
+
+      const workoutOk = results[0].status === "fulfilled";
+      const nutritionOk = results[1].status === "fulfilled";
+      const workout404 = !workoutOk && results[0].reason?.response?.status === 404;
+      const nutrition404 = !nutritionOk && results[1].reason?.response?.status === 404;
+
+      if (!workoutOk && !nutritionOk) {
+        if (workout404 && nutrition404) {
+          showToast("Henüz atanacak kaydedilmiş bir program yok. Önce taslak oluşturun.", "error");
+        } else {
+          // En az biri gerçek hata — ilk hatayı göster
+          const err = results[0].status === "rejected" ? results[0].reason : results[1].reason;
+          showToast(translateError(err), "error");
+        }
+        return;
+      }
+
+      // En az biri basarili
+      const parts = [];
+      if (workoutOk) parts.push("antrenman");
+      if (nutritionOk) parts.push("beslenme");
+      showToast(`${parts.join(" ve ")} programı başarıyla atandı!`, "success");
+
       setTab("programs");
-      setProgramsKey((k) => k + 1); // Force ProgramsTab refresh
+      setProgramsKey((k) => k + 1);
     } catch (e) {
       console.error("Assign program error:", e);
-      if (e?.response?.status === 404) {
-        showToast(
-          "Henüz atanacak kaydedilmiş bir program yok. Lütfen önce bir taslak kaydedin.",
-          "error"
-        );
-      } else {
-        showToast(translateError(e), "error");
-      }
+      showToast(translateError(e), "error");
     } finally {
       setAssignLoading(false);
     }

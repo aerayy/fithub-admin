@@ -24,6 +24,35 @@ export default function SACoaches() {
     } catch { showToast("İşlem başarısız", "error"); }
   };
 
+  const editReferralCode = async (coach) => {
+    const newCode = prompt(
+      `${coach.full_name || coach.email} için davet kodu:\n(3-20 karakter, sadece harf ve rakam)`,
+      coach.referral_code || ""
+    );
+    if (newCode === null) return; // user cancelled
+    const trimmed = newCode.trim().toUpperCase();
+    if (!trimmed || !/^[A-Za-z0-9]{3,20}$/.test(trimmed)) {
+      showToast("Geçersiz kod (3-20 karakter, sadece A-Z 0-9)", "error");
+      return;
+    }
+    try {
+      await api.patch(`/superadmin/coaches/${coach.user_id}/referral-code`, {
+        referral_code: trimmed,
+      });
+      showToast(`Davet kodu güncellendi: ${trimmed}`, "success");
+      fetch();
+    } catch (e) {
+      const detail = e?.response?.data?.detail;
+      showToast(detail || "Kod güncellenemedi", "error");
+    }
+  };
+
+  const copyCode = (code) => {
+    if (!code) return;
+    navigator.clipboard?.writeText(code);
+    showToast(`Kopyalandı: ${code}`, "success");
+  };
+
   if (loading) return <div className="text-gray-500 text-sm">Yükleniyor...</div>;
 
   return (
@@ -38,6 +67,7 @@ export default function SACoaches() {
           <thead className="bg-gray-800/50 text-gray-400">
             <tr>
               <th className="px-5 py-3 font-medium">Koç</th>
+              <th className="px-5 py-3 font-medium">Davet Kodu</th>
               <th className="px-5 py-3 font-medium">Öğrenci</th>
               <th className="px-5 py-3 font-medium">Aktif Abo</th>
               <th className="px-5 py-3 font-medium">Gelir</th>
@@ -63,6 +93,34 @@ export default function SACoaches() {
                       <div className="text-xs text-gray-500">{c.email}</div>
                     </div>
                   </div>
+                </td>
+                <td className="px-5 py-4">
+                  {c.referral_code ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-emerald-400 font-semibold tracking-wider">{c.referral_code}</span>
+                      <button
+                        onClick={() => copyCode(c.referral_code)}
+                        title="Kopyala"
+                        className="text-gray-500 hover:text-emerald-400 text-xs"
+                      >
+                        📋
+                      </button>
+                      <button
+                        onClick={() => editReferralCode(c)}
+                        title="Düzenle"
+                        className="text-gray-500 hover:text-emerald-400 text-xs"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => editReferralCode(c)}
+                      className="text-xs px-2.5 py-1 rounded-lg border border-gray-700 text-gray-400 hover:bg-gray-800"
+                    >
+                      + Kod Ekle
+                    </button>
+                  )}
                 </td>
                 <td className="px-5 py-4 text-gray-300">{c.student_count || 0}</td>
                 <td className="px-5 py-4 text-gray-300">{c.active_sub_count || 0}</td>

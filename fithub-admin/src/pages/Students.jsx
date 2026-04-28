@@ -132,48 +132,67 @@ export default function Students() {
       );
     }
 
-    // Use actual status field from API
-    const status = r.status || r.subscription_status || "";
-    const statusLower = status.toLowerCase();
-    
-    // Map status to display
-    if (statusLower === "active") {
+    // Backend turetilmis client_state varsa onu kullan (PROGRAM_ASSIGNED /
+    // PURCHASED_WAITING / EXPIRED / CANCELED / PENDING). Flutter'in
+    // /client/state mantigiyla simetrik — koc da ogrenci de ayni state'i gorur.
+    const cs = (r.client_state || "").toUpperCase();
+    if (cs === "PROGRAM_ASSIGNED") {
       return (
         <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
           Aktif
         </span>
       );
-    } else if (statusLower === "expired") {
+    }
+    if (cs === "PURCHASED_WAITING") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700" title="Öğrenci satın aldı, program henüz atanmadı">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse mr-1.5" />
+          Hazırlanıyor
+        </span>
+      );
+    }
+    if (cs === "EXPIRED") {
       return (
         <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
           Süresi Dolmuş
         </span>
       );
-    } else if (statusLower === "pending") {
+    }
+    if (cs === "PENDING") {
       return (
         <span className="inline-flex items-center rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-medium text-yellow-700">
-          Beklemede
-        </span>
-      );
-    } else if (statusLower === "canceled" || statusLower === "rejected") {
-      return (
-        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
-          Pasif
-        </span>
-      );
-    } else {
-      // Fallback: use is_active if status is not available
-      const isActive = !!r.is_active;
-      return (
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-            isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-700"
-          }`}
-        >
-          {isActive ? "Aktif" : "Pasif"}
+          Onay Bekliyor
         </span>
       );
     }
+    if (cs === "CANCELED") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+          İptal
+        </span>
+      );
+    }
+
+    // Fallback (eski endpointler client_state vermezse)
+    const status = (r.status || r.subscription_status || "").toLowerCase();
+    if (status === "active") {
+      return <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">Aktif</span>;
+    }
+    if (status === "expired") {
+      return <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">Süresi Dolmuş</span>;
+    }
+    if (status === "pending") {
+      return <span className="inline-flex items-center rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-medium text-yellow-700">Beklemede</span>;
+    }
+    if (status === "canceled" || status === "rejected") {
+      return <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">Pasif</span>;
+    }
+    const isActive = !!r.is_active;
+    return (
+      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isActive ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+        {isActive ? "Aktif" : "Pasif"}
+      </span>
+    );
   };
 
   if (loading)

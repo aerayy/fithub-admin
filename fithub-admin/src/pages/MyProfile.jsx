@@ -649,17 +649,35 @@ export default function MyProfile() {
               {/* Identity */}
               <div className="flex-1 min-w-0 pb-1">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] ${
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const next = !isActive;
+                      const confirmMsg = next
+                        ? "Profilini öğrencilere görünür yapmak istiyor musun? Referans kodun ile sana ulaşabilecekler."
+                        : "Profilini gizlemek istiyor musun? Öğrenciler seni göremeyecek ve referans kodun çalışmayacak.";
+                      if (!window.confirm(confirmMsg)) return;
+                      try {
+                        await api.put("/coach/me/profile", { is_active: next });
+                        setIsActive(next);
+                        showToast(next ? "Profilin yayında!" : "Profilin gizlendi", "success");
+                      } catch {
+                        showToast("Durum değiştirilemedi", "error");
+                      }
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] transition-colors hover:opacity-80 ${
                       isActive
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-slate-100 text-slate-600 border border-slate-200"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                        : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
                     }`}
-                    title={isActive ? "Öğrenci uygulamasında profilin görünüyor" : "Profilin öğrencilere görünmüyor"}
+                    title={isActive ? "Tıkla: profili gizle" : "Tıkla: profili yayınla"}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
                     {isActive ? "Yayında" : "Gizli"}
-                  </span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
                   {editProfileOpen && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] bg-amber-50 text-amber-700 border border-amber-200">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

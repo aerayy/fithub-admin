@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { api } from "../lib/api";
+import { api, createCoachConversation } from "../lib/api";
 import { useToast } from "../components/Toast";
 import { translateError } from "../lib/errorHandler";
 
@@ -21,14 +21,14 @@ export default function Students() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // all | active | new
+  // all | active | waiting | expiring | inactive | new
   const [tab, setTab] = useState("all");
 
   // ✅ URL ?tab=new gibi gelirse otomatik tab seç
   useEffect(() => {
     const p = new URLSearchParams(loc.search);
     const t = p.get("tab");
-    if (t === "new" || t === "active" || t === "all") setTab(t);
+    if (["new", "active", "all", "waiting", "expiring", "inactive"].includes(t)) setTab(t);
   }, [loc.search]);
 
   const fetchStudents = async (nextTab) => {
@@ -36,8 +36,8 @@ export default function Students() {
     setError("");
 
     try {
+      // Yeni satın alımlar ayrı endpoint, diğerleri students/all'dan filter edilir
       let url = "/coach/students/all";
-      if (nextTab === "active") url = "/coach/students/active";
       if (nextTab === "new") url = "/coach/students/new-purchases?days=7";
 
       const { data } = await api.get(url);
@@ -82,29 +82,91 @@ export default function Students() {
   };
 
   const rows = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return students;
+    let filtered = students;
 
-    return students.filter((x) => {
+    // Tab filtresi (frontend) — tum tablar students/all uzerinden filter ediyor
+    if (tab === "active") {
+      filtered = filtered.filter((x) => (x.client_state || "").toUpperCase() === "PROGRAM_ASSIGNED");
+    } else if (tab === "waiting") {
+      filtered = filtered.filter((x) => (x.client_state || "").toUpperCase() === "PURCHASED_WAITING");
+    } else if (tab === "expiring") {
+      // Aktif (atanmis) + son 7 gun ya da daha az kaldi
+      filtered = filtered.filter((x) => {
+        const cs = (x.client_state || "").toUpperCase();
+        if (cs !== "PROGRAM_ASSIGNED") return false;
+        if (!x.ends_at) return false;
+        const end = new Date(x.ends_at);
+        const now = new Date();
+        const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+        return daysLeft >= 0 && daysLeft <= 7;
+      });
+    } else if (tab === "inactive") {
+      filtered = filtered.filter((x) => {
+        const cs = (x.client_state || "").toUpperCase();
+        return cs === "EXPIRED" || cs === "CANCELED";
+      });
+    }
+    // 'all' → tum students; 'new' → ayri endpoint, students zaten filtrelenmis
+
+    const s = q.trim().toLowerCase();
+    if (!s) return filtered;
+
+    return filtered.filter((x) => {
       const name = (x.full_name || "").toLowerCase();
       const goal = (x.goal_type || "").toLowerCase();
       const email = (x.email || "").toLowerCase();
       const pkg = (x.package_name || x.plan_name || "").toLowerCase();
       return name.includes(s) || goal.includes(s) || email.includes(s) || pkg.includes(s);
     });
-  }, [q, students]);
+  }, [q, students, tab]);
 
-  const TabBtn = ({ id, children }) => {
+  // Tab basina sayilar (badge)
+  const tabCounts = useMemo(() => {
+    const counts = { active: 0, waiting: 0, expiring: 0, inactive: 0 };
+    students.forEach((x) => {
+      const cs = (x.client_state || "").toUpperCase();
+      if (cs === "PROGRAM_ASSIGNED") {
+        counts.active++;
+        if (x.ends_at) {
+          const daysLeft = Math.ceil((new Date(x.ends_at) - new Date()) / (1000 * 60 * 60 * 24));
+          if (daysLeft >= 0 && daysLeft <= 7) counts.expiring++;
+        }
+      } else if (cs === "PURCHASED_WAITING") {
+        counts.waiting++;
+      } else if (cs === "EXPIRED" || cs === "CANCELED") {
+        counts.inactive++;
+      }
+    });
+    return counts;
+  }, [students]);
+
+  const openMessageWith = async (e, studentId) => {
+    e.stopPropagation();
+    try {
+      const conv = await createCoachConversation(Number(studentId));
+      nav(`/messages?conversation=${conv.id}`);
+    } catch (err) {
+      showToast(translateError(err), "error");
+    }
+  };
+
+  const TabBtn = ({ id, children, count, dot }) => {
     const active = tab === id;
     return (
       <button
         type="button"
         onClick={() => setTab(id)}
-        className={`rounded-xl px-3 py-2 text-sm border ${
+        className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm border ${
           active ? "bg-black text-white border-black" : "bg-white text-gray-700 hover:bg-gray-50"
         }`}
       >
+        {dot && <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />}
         {children}
+        {typeof count === "number" && count > 0 && (
+          <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${active ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"}`}>
+            {count}
+          </span>
+        )}
       </button>
     );
   };
@@ -254,7 +316,10 @@ export default function Students() {
 
         <div className="flex flex-wrap items-center gap-2">
           <TabBtn id="all">Tümü</TabBtn>
-          <TabBtn id="active">Aktif</TabBtn>
+          <TabBtn id="active" count={tabCounts.active} dot="bg-emerald-500">Aktif</TabBtn>
+          <TabBtn id="waiting" count={tabCounts.waiting} dot="bg-blue-500 animate-pulse">Hazırlanıyor</TabBtn>
+          <TabBtn id="expiring" count={tabCounts.expiring} dot="bg-amber-500">Bitmeye Yakın</TabBtn>
+          <TabBtn id="inactive" count={tabCounts.inactive} dot="bg-gray-400">Geçmiş</TabBtn>
           <TabBtn id="new">Yeni (7g)</TabBtn>
 
           <input
@@ -274,7 +339,7 @@ export default function Students() {
               <th className="px-5 py-3 font-medium">Hedef</th>
               <th className="px-5 py-3 font-medium">Durum</th>
               <th className="px-5 py-3 font-medium">Son güncelleme</th>
-              {tab === "new" ? <th className="px-5 py-3 font-medium">İşlem</th> : null}
+              <th className="px-5 py-3 font-medium">İşlem</th>
             </tr>
           </thead>
 
@@ -327,43 +392,56 @@ export default function Students() {
 
                   <td className="px-5 py-4 text-gray-600">{getLastDate(r)}</td>
 
-                  {tab === "new" ? (
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {tab === "new" ? (
+                        <>
+                          <button
+                            type="button"
+                            className="px-3 py-2 rounded-lg text-sm font-medium bg-black text-white hover:opacity-90 disabled:opacity-40"
+                            disabled={!subId}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              decideSubscription({ studentId: r.student_id, subscriptionId: subId, decision: "approve" });
+                            }}
+                          >
+                            Onayla
+                          </button>
+                          <button
+                            type="button"
+                            className="px-3 py-2 rounded-lg text-sm font-medium border hover:bg-gray-50 disabled:opacity-40"
+                            disabled={!subId}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              decideSubscription({ studentId: r.student_id, subscriptionId: subId, decision: "reject" });
+                            }}
+                          >
+                            Reddet
+                          </button>
+                        </>
+                      ) : (
                         <button
                           type="button"
-                          className="px-3 py-2 rounded-lg text-sm font-medium bg-black text-white hover:opacity-90 disabled:opacity-40"
-                          disabled={!subId}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            decideSubscription({ studentId: r.student_id, subscriptionId: subId, decision: "approve" });
-                          }}
+                          title="Mesaj gönder"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                          onClick={(e) => openMessageWith(e, r.student_id)}
                         >
-                          Onayla
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          </svg>
+                          Mesaj
                         </button>
-
-                        <button
-                          type="button"
-                          className="px-3 py-2 rounded-lg text-sm font-medium border hover:bg-gray-50 disabled:opacity-40"
-                          disabled={!subId}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            decideSubscription({ studentId: r.student_id, subscriptionId: subId, decision: "reject" });
-                          }}
-                        >
-                          Reddet
-                        </button>
-                      </div>
-                    </td>
-                  ) : null}
+                      )}
+                    </div>
+                  </td>
                 </tr>
               );
             })}
 
             {rows.length === 0 ? (
               <tr>
-                <td className="px-5 py-8 text-gray-500" colSpan={tab === "new" ? 5 : 4}>
-                  Öğrenci bulunamadı.
+                <td className="px-5 py-8 text-gray-500" colSpan={5}>
+                  Bu kategoride öğrenci yok.
                 </td>
               </tr>
             ) : null}

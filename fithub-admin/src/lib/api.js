@@ -12,6 +12,7 @@ export function getApiBaseUrl() {
 export const api = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json" },
+  timeout: 180000,
 });
 
 export function getToken() {

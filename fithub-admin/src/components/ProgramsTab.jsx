@@ -666,7 +666,7 @@ export default function ProgramsTab() {
     setNutritionGenerateSuccess(false);
 
     try {
-      const res = await api.post(`/coach/students/${studentId}/nutrition-programs/generate`, {
+      const res = await api.post(`/coach/students/${studentId}/nutrition-programs/generate-v2`, {
         meal_count: parseInt(nutritionFormData.meal_count) || 5,
         diet_type: nutritionFormData.diet_type,
         training_days: nutritionFormData.training_days,

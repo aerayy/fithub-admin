@@ -295,7 +295,7 @@ function mapNutritionFromActivePrograms(activePrograms) {
 
 function nutritionSummaryCards(week, dayKey = "mon") {
   const meals = week?.[dayKey] ?? [];
-  return meals.slice(0, 3).map((m, idx) => {
+  return meals.map((m, idx) => {
     const timeStr = m?.time ? ` ${m.time}` : "";
     const lines = (m.items ?? []).map(nutritionItemToLine).filter(Boolean);
     return {

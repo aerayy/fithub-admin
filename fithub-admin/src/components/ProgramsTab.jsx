@@ -618,7 +618,7 @@ export default function ProgramsTab() {
     setGenerateSuccess(false);
     
     try {
-      const res = await api.post(`/coach/students/${studentId}/workout-programs/generate`, {});
+      const res = await api.post(`/coach/students/${studentId}/workout-programs/generate-v2`, {});
       
       // Update latest workout program directly from response (immediate UI update)
       if (res.data?.week) {

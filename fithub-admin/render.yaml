@@ -8,8 +8,6 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         value: https://fithub-backend-jd40.onrender.com
-      - key: VITE_ADMIN_KEY
-        sync: false
     routes:
       - type: rewrite
         source: /*

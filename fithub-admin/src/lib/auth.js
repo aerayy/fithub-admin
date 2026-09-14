@@ -16,32 +16,17 @@ export async function login(email, password) {
   }
 }
 
-export async function signup(email, password, fullName) {
+export async function signup(email, password, fullName, inviteCode = "") {
   try {
-    // Admin key'i environment variable'dan al, yoksa boş gönder
-    const adminKey = import.meta.env.VITE_ADMIN_KEY || "";
-
-    const requestBody = {
+    // Koç kaydı: superadmin anahtarı ARTIK tarayıcıya gömülmüyor. Backend
+    // /auth/coach-signup rate limit + (varsa) davet koduyla korunur ve JWT döner.
+    const { data } = await api.post("/auth/coach-signup", {
       email,
       password,
       full_name: fullName,
-      bio: "",
-      instagram: "",
-      photo_url: "",
-      price_per_month: 0,
-      rating: 0,
-      rating_count: 0,
-      specialties: [],
-      is_active: true,
-    };
-
-    const { data } = await api.post("/admin/coaches", requestBody, {
-      headers: {
-        "X-Admin-Key": adminKey,
-      },
+      invite_code: inviteCode ? inviteCode.trim() : null,
     });
 
-    // Backend'den token dönerse kaydet
     if (data.token || data.access_token) {
       setToken(data.token || data.access_token);
     }

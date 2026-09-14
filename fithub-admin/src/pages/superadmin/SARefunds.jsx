@@ -4,7 +4,7 @@ import { api } from "../../lib/api";
 /**
  * Bekleyen iade taleplerini listeler ve admin onayı sağlar.
  * Backend: /admin/refunds/pending (GET) ve /admin/refunds/{id}/approve (POST).
- * Auth: X-Admin-Key header (VITE_ADMIN_KEY).
+ * Auth: superadmin JWT (Bearer, api interceptor) — admin anahtarı tarayıcıda tutulmaz.
  */
 export default function SARefunds() {
   const [refunds, setRefunds] = useState([]);
@@ -12,14 +12,11 @@ export default function SARefunds() {
   const [processingId, setProcessingId] = useState(null);
   const [error, setError] = useState("");
 
-  const adminKey = import.meta.env.VITE_ADMIN_KEY || "";
-  const headers = { "X-Admin-Key": adminKey };
-
   const fetchRefunds = async () => {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get("/admin/refunds/pending", { headers });
+      const { data } = await api.get("/admin/refunds/pending");
       setRefunds(data?.refunds || []);
     } catch (e) {
       setError(e?.response?.data?.detail || "İade talepleri yüklenemedi.");
@@ -36,7 +33,7 @@ export default function SARefunds() {
     if (!confirm("Bu iade talebini onaylıyor musun? Para iadesi işleme alınacak.")) return;
     setProcessingId(id);
     try {
-      await api.post(`/admin/refunds/${id}/approve`, {}, { headers });
+      await api.post(`/admin/refunds/${id}/approve`, {});
       // Listeden kaldır
       setRefunds((prev) => prev.filter((r) => r.id !== id));
     } catch (e) {

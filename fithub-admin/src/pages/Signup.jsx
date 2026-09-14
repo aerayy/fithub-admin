@@ -8,6 +8,7 @@ export default function Signup() {
     email: "",
     password: "",
     confirmPassword: "",
+    inviteCode: "",
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -27,8 +28,8 @@ export default function Signup() {
       setError("İsim alanı boş bırakılamaz");
       return false;
     }
-    if (formData.password.length < 6) {
-      setError("Şifre en az 6 karakter olmalıdır");
+    if (formData.password.length < 8) {
+      setError("Şifre en az 8 karakter olmalıdır");
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -49,7 +50,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      await signup(formData.email, formData.password, formData.name);
+      await signup(formData.email, formData.password, formData.name, formData.inviteCode);
       navigate("/");
     } catch (err) {
       console.error("Signup error:", err);
@@ -159,6 +160,22 @@ export default function Signup() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700 mb-1">
+                Davet kodu (varsa)
+              </label>
+              <input
+                id="inviteCode"
+                name="inviteCode"
+                type="text"
+                placeholder="Fithub ekibinden aldığınız kod"
+                value={formData.inviteCode}
+                onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
                 disabled={loading}
               />

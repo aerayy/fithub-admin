@@ -147,17 +147,93 @@ function SectionTitle({ icon, title, right }) {
   );
 }
 
-export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave, onDraftSave }) {
+const MAX_WEEKS = 4;
+
+/** initialWeeks: {1: week, 2: week, ...} (çok haftalı) → normalize; yoksa tek hafta {1: initialWeek}. */
+function normalizeInitialWeeks(initialWeeks, initialWeek) {
+  const out = {};
+  if (initialWeeks && typeof initialWeeks === "object") {
+    for (const k of Object.keys(initialWeeks)) {
+      const idx = Number(k);
+      if (Number.isInteger(idx) && idx >= 1 && idx <= MAX_WEEKS && initialWeeks[k]) {
+        out[idx] = normalizeInitialWeek(initialWeeks[k]);
+      }
+    }
+  }
+  if (Object.keys(out).length === 0) out[1] = normalizeInitialWeek(initialWeek);
+  return out;
+}
+
+export default function WorkoutEditor({
+  initialWeek, initialWeeks, initialWeekIndex, valueWeek, onCancel, onSave, onDraftSave,
+}) {
   const [day, setDay] = useState("mon");
-  const [week, setWeek] = useState(() => normalizeInitialWeek(initialWeek));
+  // Çok haftalı düzenleme: weeks = {1: week, ...}; `week` ve `setWeek` seçili haftaya bakar,
+  // böylece aşağıdaki tüm gün/blok işlemleri değişmeden çalışır.
+  const [weeks, setWeeks] = useState(() => normalizeInitialWeeks(initialWeeks, initialWeek));
+  const [weekIdx, setWeekIdx] = useState(() => {
+    const n = Number(initialWeekIndex);
+    return Number.isInteger(n) && n >= 1 && n <= MAX_WEEKS ? n : 1;
+  });
+  const weekNumbers = useMemo(
+    () => Object.keys(weeks).map(Number).filter((n) => Number.isInteger(n)).sort((a, b) => a - b),
+    [weeks]
+  );
+  const activeWeekIdx = weeks[weekIdx] ? weekIdx : (weekNumbers[0] || 1);
+  const week = weeks[activeWeekIdx] ?? normalizeInitialWeek({});
+  const setWeek = (updater) =>
+    setWeeks((prev) => {
+      const cur = prev[activeWeekIdx] ?? normalizeInitialWeek({});
+      const next = typeof updater === "function" ? updater(cur) : updater;
+      return { ...prev, [activeWeekIdx]: next };
+    });
 
   // Sync internal state when valueWeek prop changes (for AI injection)
   useEffect(() => {
     if (valueWeek) {
-      const normalized = normalizeInitialWeek(valueWeek);
-      setWeek(normalized);
+      setWeeks({ 1: normalizeInitialWeek(valueWeek) });
+      setWeekIdx(1);
     }
   }, [valueWeek]);
+
+  const multiWeek = weekNumbers.length > 1;
+  const weeksForSave = () => (multiWeek ? weeks : null);
+
+  function addWeek() {
+    setWeeks((prev) => {
+      const nums = Object.keys(prev).map(Number).sort((a, b) => a - b);
+      if (nums.length >= MAX_WEEKS) return prev;
+      const nextIdx = nums.length + 1;
+      // Yeni hafta = seçili haftanın kopyası (koç sadece ilerleme farkını düzenler)
+      const next = { ...prev, [nextIdx]: safeClone(prev[activeWeekIdx] ?? normalizeInitialWeek({})) };
+      setTimeout(() => setWeekIdx(nextIdx), 0);
+      return next;
+    });
+  }
+
+  function removeWeek(idx) {
+    setWeeks((prev) => {
+      const nums = Object.keys(prev).map(Number).sort((a, b) => a - b);
+      if (nums.length <= 1) return prev;
+      const remaining = nums.filter((n) => n !== idx).map((n) => prev[n]);
+      const out = {};
+      remaining.forEach((w, i) => { out[i + 1] = w; });
+      setTimeout(() => setWeekIdx(Math.min(idx, remaining.length)), 0);
+      return out;
+    });
+  }
+
+  function copyWeekToFollowing() {
+    setWeeks((prev) => {
+      const src = prev[activeWeekIdx];
+      if (!src) return prev;
+      const out = { ...prev };
+      for (const k of Object.keys(prev).map(Number)) {
+        if (k > activeWeekIdx) out[k] = safeClone(src);
+      }
+      return out;
+    });
+  }
 
   const dayObj = useMemo(() => week[day] ?? emptyDayPayload(), [week, day]);
 
@@ -356,6 +432,45 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
 
   return (
     <div className="space-y-4">
+      {/* week tabs — 4 haftalık (v3) programlar ve çok haftalı manuel programlar */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border bg-white p-2">
+        <span className="px-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Hafta</span>
+        {weekNumbers.map((n) => (
+          <TabBtn key={n} active={activeWeekIdx === n} onClick={() => setWeekIdx(n)}>
+            {n}. Hafta
+          </TabBtn>
+        ))}
+        {weekNumbers.length < MAX_WEEKS && (
+          <button
+            onClick={addWeek}
+            type="button"
+            title="Seçili haftanın kopyasıyla yeni hafta ekle (en fazla 4)"
+            className="rounded-xl border border-dashed px-3 py-2 text-sm font-medium text-gray-500 hover:border-[#3E9E8E] hover:text-[#2B7B6E]"
+          >
+            + Hafta
+          </button>
+        )}
+        {multiWeek && (
+          <>
+            <button
+              onClick={copyWeekToFollowing}
+              type="button"
+              title="Bu haftayı sonraki haftalara kopyala"
+              className="ml-auto rounded-xl border px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+            >
+              Sonraki haftalara kopyala
+            </button>
+            <button
+              onClick={() => removeWeek(activeWeekIdx)}
+              type="button"
+              className="rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+            >
+              Haftayı kaldır
+            </button>
+          </>
+        )}
+      </div>
+
       {/* day tabs */}
       <div className="flex flex-wrap gap-2 rounded-2xl border bg-white p-2">
         {DAYS.map((d) => (
@@ -603,7 +718,7 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
         </button>
         {onDraftSave && (
           <button
-            onClick={() => onDraftSave(week)}
+            onClick={() => onDraftSave(weeks[1] ?? week, weeksForSave())}
             className="rounded-xl border border-[#3E9E8E] px-4 py-2 text-sm font-semibold text-[#3E9E8E] hover:bg-[#3E9E8E]/5"
             type="button"
           >
@@ -611,7 +726,7 @@ export default function WorkoutEditor({ initialWeek, valueWeek, onCancel, onSave
           </button>
         )}
         <button
-          onClick={() => onSave(week)}
+          onClick={() => onSave(weeks[1] ?? week, weeksForSave())}
           className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
           type="button"
         >

@@ -89,6 +89,21 @@ function normalizeWeekForEditor(week) {
   return normalized;
 }
 
+// {"1": week, "2": week, ...} → {1: normalizedWeek, ...}; yoksa {1: fallbackWeek}
+function normalizeWeeksForEditor(weeks, fallbackWeek) {
+  const out = {};
+  if (weeks && typeof weeks === "object") {
+    for (const k of Object.keys(weeks)) {
+      const idx = Number(k);
+      if (Number.isInteger(idx) && idx >= 1 && idx <= 4 && weeks[k]) {
+        out[idx] = normalizeWeekForEditor(weeks[k]);
+      }
+    }
+  }
+  if (Object.keys(out).length === 0) out[1] = fallbackWeek || emptyStructuredWeek();
+  return out;
+}
+
 function ensureStructuredDay(existing) {
   // existing varsa merge etmeye çalış (bozma)
   const base = {
@@ -129,10 +144,11 @@ function flattenStructuredDayToLines(day) {
     if (!it) continue;
     const name = it?.name || it?.exercise_name;
     if (!name) continue;
-    const sets = it?.sets ?? 0;
+    const sets = it?.sets;
     const reps = it?.reps ?? "";
-    const notes = it?.notes ?? "";
-    const base = `${name} ${sets}x${reps}`.trim();
+    const notes = it?.notes || it?.description || it?.duration || "";
+    // v3 ısınma maddelerinde set/tekrar yok → "0x" yerine sade satır
+    const base = sets ? `${name} ${sets}x${reps}`.trim() : `Isınma: ${name}`;
     lines.push(notes ? `${base} • ${notes}` : base);
   }
 
@@ -328,6 +344,9 @@ export default function ProgramsTab() {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState(null); // Error message for page banner
   const [generateSuccess, setGenerateSuccess] = useState(false); // Success message flag
+  const [generateSuccessMsg, setGenerateSuccessMsg] = useState("");
+  const [generatingV3, setGeneratingV3] = useState(false); // 4 haftalık v3 pipeline
+  const [selectedWorkoutWeek, setSelectedWorkoutWeek] = useState(1); // kartta gösterilen hafta
   const [nutritionGenerating, setNutritionGenerating] = useState(false);
   const [nutritionGenerateError, setNutritionGenerateError] = useState(null);
   const [nutritionGenerateSuccess, setNutritionGenerateSuccess] = useState(false);
@@ -495,25 +514,33 @@ export default function ProgramsTab() {
     }
   };
 
+  // Backend `latest` / üretim yanıtını karta uygular: hafta bazlı yapısal `weeks` öncelikli
+  // (day_payload: başlık, ısınma, bloklar korunur), yoksa düz `week`. total_weeks > 1 → hafta sekmeleri.
+  const applyLatestWorkoutResponse = (data) => {
+    if (!data || (!data.week && !data.weeks)) return false;
+    const fallbackWeek = normalizeWeekForEditor(data.week);
+    const weeks = normalizeWeeksForEditor(data.weeks, fallbackWeek);
+    const totalWeeks = Math.max(1, Number(data.total_weeks) || Object.keys(weeks).length || 1);
+    setLatestWorkoutProgram({
+      program_id: data.program_id || null,
+      week: weeks[1] || fallbackWeek,
+      weeks,
+      total_weeks: totalWeeks,
+      pipeline_version: data.pipeline_version || null,
+      validation_score: data.validation_score ?? null,
+      generated_by: data.generated_by || data.source || null,
+    });
+    setSelectedWorkoutWeek(1);
+    setWorkoutSource(data.generated_by === "ai" || data.source === "ai" ? "ai" : null);
+    return true;
+  };
+
   // Fetch the latest saved workout program (this is what the card displays)
   const fetchLatestWorkout = async () => {
     if (!studentId) return;
     try {
       const res = await api.get(`/coach/students/${studentId}/workout-programs/latest`);
-      if (res.data?.week) {
-        const normalizedWeek = normalizeWeekForEditor(res.data.week);
-        setLatestWorkoutProgram({
-          program_id: res.data?.program_id || null,
-          week: normalizedWeek,
-          generated_by: res.data?.generated_by || res.data?.source || null,
-        });
-        // Check if it's AI-generated from response (support both field names)
-        if (res.data?.generated_by === "ai" || res.data?.source === "ai") {
-          setWorkoutSource("ai");
-        } else {
-          setWorkoutSource(null);
-        }
-      }
+      applyLatestWorkoutResponse(res.data);
     } catch (e) {
       // 404 is expected if no workout exists, ignore it
       if (e?.response?.status !== 404) {
@@ -572,8 +599,11 @@ export default function ProgramsTab() {
 
   // Card always displays latest workout program (regardless of active status)
   const displayWorkoutWeek = useMemo(() => {
+    const weeks = latestWorkoutProgram?.weeks;
+    if (weeks && weeks[selectedWorkoutWeek]) return weeks[selectedWorkoutWeek];
     return latestWorkoutProgram?.week || emptyStructuredWeek();
-  }, [latestWorkoutProgram]);
+  }, [latestWorkoutProgram, selectedWorkoutWeek]);
+  const workoutTotalWeeks = Math.max(1, Number(latestWorkoutProgram?.total_weeks) || 1);
 
   // Active badge: check if latest program is the active one
   const isLatestProgramActive =
@@ -601,8 +631,10 @@ export default function ProgramsTab() {
 
   const hasNutritionProgram = hasNutritionAnyData;
 
-  async function saveWorkoutToBackend(week, { assign = false } = {}) {
-    await api.post(`/coach/students/${studentId}/workout-programs`, { week });
+  async function saveWorkoutToBackend(week, { assign = false, weeks = null } = {}) {
+    // Editör hafta sekmeleriyle 2+ hafta döndürdüyse {weeks}, yoksa eski {week}
+    const body = weeks && Object.keys(weeks).length > 1 ? { weeks } : { week };
+    await api.post(`/coach/students/${studentId}/workout-programs`, body);
   
     if (assign) {
       await api.post(`/coach/students/${studentId}/workout-programs/assign`);
@@ -619,33 +651,22 @@ export default function ProgramsTab() {
     
     try {
       const res = await api.post(`/coach/students/${studentId}/workout-programs/generate-v2`, {});
-      
+
       // Update latest workout program directly from response (immediate UI update)
-      if (res.data?.week) {
-        const normalizedWeek = normalizeWeekForEditor(res.data.week);
-        setLatestWorkoutProgram({
-          program_id: res.data?.program_id || null,
-          week: normalizedWeek,
-          generated_by: res.data?.generated_by || res.data?.source || null,
-        });
-        
-        // Mark as AI-generated if indicated in response
-        if (res.data?.generated_by === "ai" || res.data?.source === "ai") {
-          setWorkoutSource("ai");
-        }
-      }
-      
+      applyLatestWorkoutResponse(res.data);
+
       // Refetch from backend to ensure consistency
       await fetchLatestWorkout();
-      
+
       // Refetch active programs to update active ID (for badge check)
       await fetchActive();
-      
+
       // Show success message
+      setGenerateSuccessMsg("AI ile üretildi (1 haftalık şablon). İnceleyip \"Programı Ata\" ile aktifleştirin.");
       setGenerateSuccess(true);
       setTimeout(() => {
         setGenerateSuccess(false);
-      }, 3000);
+      }, 5000);
     } catch (e) {
       const msg =
         e?.response?.data?.detail ||
@@ -655,6 +676,34 @@ export default function ProgramsTab() {
       console.error("AI generation failed:", e);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // 4 haftalık v3 pipeline (uygulamadaki Fit AI Koç ile aynı): taslak olarak kaydedilir,
+  // koç hafta sekmelerinde inceler/düzenler, "Programı Ata" ile aktifleştirir.
+  const generateWorkoutV3 = async () => {
+    if (!studentId || generating || generatingV3) return;
+    setGeneratingV3(true);
+    setGenerateError(null);
+    setGenerateSuccess(false);
+    try {
+      const res = await api.post(`/coach/students/${studentId}/workout-programs/generate-v3`, {});
+      applyLatestWorkoutResponse(res.data);
+      await fetchLatestWorkout();
+      await fetchActive();
+      const score = res.data?.validation_score;
+      setGenerateSuccessMsg(
+        `4 haftalık AI program üretildi${score != null ? ` (doğrulama puanı ${score})` : ""}. ` +
+        `Taslak olarak kaydedildi; haftaları inceleyip "Programı Ata" ile aktifleştirin.`
+      );
+      setGenerateSuccess(true);
+      setTimeout(() => setGenerateSuccess(false), 8000);
+    } catch (e) {
+      const raw = e?.response?.data?.detail || e?.message || "4 haftalık AI program oluşturulamadı";
+      setGenerateError(typeof raw === "string" ? raw : JSON.stringify(raw));
+      console.error("AI v3 generation failed:", e);
+    } finally {
+      setGeneratingV3(false);
     }
   };
 
@@ -793,13 +842,24 @@ export default function ProgramsTab() {
           </div>
         </div>
       )}
+      {generatingV3 && (
+        <div className="mb-4 rounded-xl border border-[#3E9E8E]/30 bg-[#3E9E8E]/10 px-4 py-3 text-sm text-[#215F54]">
+          <div className="flex items-center gap-2">
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>AI 4 haftalık program oluşturuyor, 1-2 dakika sürebilir...</span>
+          </div>
+        </div>
+      )}
 
       {/* AI Generation Success Banner */}
       {generateSuccess && (
         <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           <div className="flex items-center gap-2">
             <span>✨</span>
-            <span>AI ile Üretildi</span>
+            <span>{generateSuccessMsg || "AI ile Üretildi"}</span>
           </div>
         </div>
       )}
@@ -847,14 +907,17 @@ export default function ProgramsTab() {
           title="Antrenman Programı"
           subtitle={
             isLatestProgramActive
-              ? "Aktif haftalık plan"
+              ? (workoutTotalWeeks > 1 ? `Aktif ${workoutTotalWeeks} haftalık plan` : "Aktif haftalık plan")
               : hasWorkoutAnyData
-              ? "Taslak (atanmadı)"
+              ? (workoutTotalWeeks > 1 ? `Taslak (${workoutTotalWeeks} hafta, atanmadı)` : "Taslak (atanmadı)")
               : "Antrenman programı yok"
           }
           onEdit={() => setOpen("workout")}
           onGenerate={generateWorkoutWithAI}
           generating={generating}
+          onGenerateV3={generateWorkoutV3}
+          generatingV3={generatingV3}
+          generateLabel="AI ile Üret (1 hafta)"
           isAIGenerated={!isLatestProgramActive && workoutSource === "ai"}
           onRemove={latestWorkoutProgram?.program_id ? removeWorkoutProgram : undefined}
           drafts={workoutDrafts}
@@ -886,6 +949,30 @@ export default function ProgramsTab() {
               ) : (
                 <span className="inline-flex items-center rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-medium text-yellow-700">
                   Taslak (atanmadı)
+                </span>
+              )}
+            </div>
+          )}
+
+          {workoutTotalWeeks > 1 && (
+            <div className="mb-3 flex flex-wrap items-center gap-1.5">
+              {Array.from({ length: workoutTotalWeeks }, (_, i) => i + 1).map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => setSelectedWorkoutWeek(w)}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold border transition ${
+                    selectedWorkoutWeek === w
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  {w}. Hafta
+                </button>
+              ))}
+              {latestWorkoutProgram?.validation_score != null && (
+                <span className="ml-auto text-[11px] text-slate-500" title="v3 doğrulama puanı (0-100)">
+                  Doğrulama puanı {latestWorkoutProgram.validation_score}
                 </span>
               )}
             </div>
@@ -1112,13 +1199,18 @@ export default function ProgramsTab() {
       >
         <WorkoutEditor
           initialWeek={displayWorkoutWeek}
+          initialWeeks={latestWorkoutProgram?.weeks}
+          initialWeekIndex={selectedWorkoutWeek}
           onCancel={() => setOpen(null)}
-          onSave={async (week) => {
+          onSave={async (week, weeks) => {
             try {
-              await saveWorkoutToBackend(week);
+              await saveWorkoutToBackend(week, { weeks });
               setLatestWorkoutProgram((prev) => ({
+                ...(prev || {}),
                 program_id: prev?.program_id || null,
                 week: week,
+                weeks: weeks || { 1: week },
+                total_weeks: weeks ? Object.keys(weeks).length : 1,
                 generated_by: prev?.generated_by || null,
               }));
               setOpen(null);
@@ -1128,12 +1220,12 @@ export default function ProgramsTab() {
               showToast(msg, "error");
             }
           }}
-          onDraftSave={(week) => {
+          onDraftSave={(week, weeks) => {
             // Modal'ı kapat, sonra draft save dialog'u aç (ad + opsiyonel zamanlama)
             setOpen(null);
             setDraftSaveDialog({
               type: "workout",
-              payload: week,
+              payload: weeks && Object.keys(weeks).length > 1 ? { weeks } : week,
               defaultName: `Taslak ${workoutDrafts.length + 1}`,
             });
           }}

@@ -179,9 +179,29 @@ export default function Students() {
   const StatusPill = ({ r }) => {
     if (tab === "active") {
       const d = typeof r.days_left === "number" ? r.days_left : null;
+      // 28. gün akışı: 4 haftalık program döngüsü bitti / bitmek üzere
+      const pdl = typeof r.program_days_left === "number" ? r.program_days_left : null;
+      const programPill = r.program_finished ? (
+        <span
+          className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700"
+          title="4 haftalık program döngüsü bitti — yeni program atayın"
+        >
+          Program bitti
+        </span>
+      ) : pdl !== null && pdl <= 3 ? (
+        <span
+          className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
+          title="Program döngüsü bitmek üzere — yeni programı hazırlayın"
+        >
+          {`Program · ${pdl} gün`}
+        </span>
+      ) : null;
       return (
-        <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-          {d === null ? "Aktif" : `Aktif · ${d} gün kaldı`}
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+            {d === null ? "Aktif" : `Aktif · ${d} gün kaldı`}
+          </span>
+          {programPill}
         </span>
       );
     }

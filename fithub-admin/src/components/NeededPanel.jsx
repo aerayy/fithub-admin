@@ -137,6 +137,13 @@ const ICONS = {
       <polyline points="12 6 12 12 16 14" />
     </svg>
   ),
+  cycle: (stroke) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  ),
 };
 
 export default function NeededPanel({
@@ -146,6 +153,7 @@ export default function NeededPanel({
   onboardingIncompleteList,
   missingWorkoutList = [],
   missingNutritionList = [],
+  programEndingList = [],
   loading,
   error,
   refresh,
@@ -214,6 +222,15 @@ export default function NeededPanel({
           onCta={() => nav("/students?tab=active")}
           loading={loading}
           icon={ICONS.workout}
+        />
+        <Row
+          label="Program döngüsü bitiyor"
+          count={programEndingList.length}
+          desc="4 haftalık programı bitmiş ya da 3 gün içinde bitecek öğrenciler"
+          ctaLabel="Program ata"
+          onCta={() => nav("/students?tab=active")}
+          loading={loading}
+          icon={ICONS.cycle}
         />
         <Row
           label="Eksik beslenme programı"

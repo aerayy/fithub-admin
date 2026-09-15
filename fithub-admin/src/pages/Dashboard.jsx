@@ -27,6 +27,7 @@ export default function Dashboard() {
     onboardingIncompleteList,
     missingWorkoutList,
     missingNutritionList,
+    programEndingList,
     recentPurchases,
     loading,
     error,
@@ -116,6 +117,7 @@ export default function Dashboard() {
           onboardingIncompleteList={onboardingIncompleteList}
           missingWorkoutList={missingWorkoutList}
           missingNutritionList={missingNutritionList}
+          programEndingList={programEndingList}
           loading={loading}
           error={error}
           refresh={refresh}
